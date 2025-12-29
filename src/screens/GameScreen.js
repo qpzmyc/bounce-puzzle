@@ -20,15 +20,29 @@ const { width: SW, height: SH } = Dimensions.get('window');
 
 const scale = Math.min((SW - 10) / GAME.width, (SH - 160) / GAME.height);
 
+// Store measured game area position globally (will be set by ref callback)
+let measuredGameAreaLayout = null;
+
 // Convert screen coordinates to game coordinates
-const screenToGameCoords = (touchX, touchY) => {
-    const safeAreaTop = 50;
-    const headerHeight = 80;
-    const bankHeight = 40;
-    const gameAreaTop = safeAreaTop + headerHeight + bankHeight + 10;
-    const gameAreaLeft = (SW - GAME.width * scale) / 2;
-    const gameAreaRight = gameAreaLeft + GAME.width * scale;
-    const gameAreaBottom = gameAreaTop + GAME.height * scale;
+// Uses measured layout when available, otherwise falls back to calculation
+const screenToGameCoords = (touchX, touchY, layoutOverride = null) => {
+    const layout = layoutOverride || measuredGameAreaLayout;
+
+    let gameAreaLeft, gameAreaTop, gameAreaRight, gameAreaBottom;
+
+    if (layout) {
+        // Use actual measured position
+        gameAreaLeft = layout.x;
+        gameAreaTop = layout.y;
+        gameAreaRight = layout.x + layout.width;
+        gameAreaBottom = layout.y + layout.height;
+    } else {
+        // Fallback to calculated position (less accurate)
+        gameAreaLeft = (SW - GAME.width * scale) / 2;
+        gameAreaTop = 140; // Approximate
+        gameAreaRight = gameAreaLeft + GAME.width * scale;
+        gameAreaBottom = gameAreaTop + GAME.height * scale;
+    }
 
     const gameX = Math.max(PHYSICS.platformWidth / 2,
         Math.min(GAME.width - PHYSICS.platformWidth / 2,
@@ -192,7 +206,14 @@ const GameScreen = ({ route, navigation }) => {
                 label: `platform-${p.type || 'normal'}` // Tag for collision listener
             });
             Matter.World.add(engine.world, b);
-            ents[`plat${i}`] = { body: b, size: { width: PHYSICS.platformWidth, height: PHYSICS.platformHeight }, platformType: p.type, renderer: Platform };
+            // During setup, use invisible renderer (DraggablePlatform handles visuals)
+            // During play, use Platform renderer
+            ents[`plat${i}`] = {
+                body: b,
+                size: { width: PHYSICS.platformWidth, height: PHYSICS.platformHeight },
+                platformType: p.type,
+                renderer: withBalls ? Platform : () => null
+            };
         });
 
         // Add trail entity for recording ball path
@@ -394,18 +415,26 @@ const GameScreen = ({ route, navigation }) => {
         const touchY = evt.nativeEvent.pageY;
         const gamePos = screenToGameCoords(touchX, touchY);
 
-        // Reset drag ref to touch position to start fresh
-        dragPosRef.current = { x: gamePos.gameX, y: gamePos.gameY };
+        // Add Y offset so platform appears ABOVE finger for better visibility
+        const bankDragOffsetY = -50;
+        const offsetGameY = Math.max(PHYSICS.platformHeight / 2, gamePos.gameY + bankDragOffsetY);
+
+        // Reset drag ref to touch position (with offset) to start fresh
+        dragPosRef.current = { x: gamePos.gameX, y: offsetGameY };
 
         // Bank drag always starts with 0 rotation
-        const isValid = gamePos.isInBounds && isPlacementValid(gamePos.gameX, gamePos.gameY, 0, level.noPlaceZones);
-        setDraggingPlatform({ type, ...gamePos, isValid });
+        const isValid = gamePos.isInBounds && isPlacementValid(gamePos.gameX, offsetGameY, 0, level.noPlaceZones);
+        setDraggingPlatform({ type, gameX: gamePos.gameX, gameY: offsetGameY, isValid });
     }, [level]);
 
     const handleDragMove = React.useCallback((type, evt) => {
         const touchX = evt.nativeEvent.pageX;
         const touchY = evt.nativeEvent.pageY;
         const targetPos = screenToGameCoords(touchX, touchY);
+
+        // Add Y offset so platform appears ABOVE finger for better visibility
+        const bankDragOffsetY = -50;
+        const targetY = Math.max(PHYSICS.platformHeight / 2, targetPos.gameY + bankDragOffsetY);
 
         // LERP Damping: Move current pos towards target pos
         // Factor 0.3 provides a nice heavy feel matching existing platforms
@@ -414,7 +443,7 @@ const GameScreen = ({ route, navigation }) => {
         const currentY = dragPosRef.current.y;
 
         const newX = currentX + (targetPos.gameX - currentX) * lerp;
-        const newY = currentY + (targetPos.gameY - currentY) * lerp;
+        const newY = currentY + (targetY - currentY) * lerp;
 
         dragPosRef.current = { x: newX, y: newY };
 
@@ -504,6 +533,12 @@ const GameScreen = ({ route, navigation }) => {
             <View
                 ref={gameAreaRef}
                 style={[styles.gameWrap, { width: GAME.width * scale, height: GAME.height * scale }]}
+                onLayout={(event) => {
+                    // Measure actual position on screen
+                    event.target.measureInWindow((x, y, width, height) => {
+                        measuredGameAreaLayout = { x, y, width, height };
+                    });
+                }}
             >
                 <View style={{ width: GAME.width, height: GAME.height, transform: [{ scale }], transformOrigin: 'top left', backgroundColor: '#0a0a18' }}>
                     {/* Show trail: last attempt during setup, or live trail during playing */}
@@ -591,7 +626,14 @@ const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones }) => {
     const TOTAL_H = 50;
 
     const pRef = useRef(p);
-    useEffect(() => { pRef.current = p; }, [p]);
+    useEffect(() => {
+        pRef.current = p;
+        // Sync local tracking refs when not dragging to stay in sync with props
+        if (!isDragging.current) {
+            posRef.current = { x: p.x, y: p.y };
+            angleRef.current = p.angle || 0;
+        }
+    }, [p]);
 
     // Local state for visual feedback during drag (Red overlay)
     // We can't easily rely on just props because we want immediate feedback
@@ -600,26 +642,40 @@ const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones }) => {
     // Since we update parent, `p` comes back updated.
 
     // Check if current position is valid
-    // Check if current position is valid
-    const isValid = isPlacementValid(p.x, p.y, p.angle || 0, zones);
+    // Use Animated.Value for validity to sync perfectly with LERP'd position
+    const validityAnim = useRef(new Animated.Value(1)).current; // 1 = valid, 0 = invalid
+    const isDragging = useRef(false);
+
+    // Initial validity from props (when not dragging)
+    const isValidFromProps = isPlacementValid(p.x, p.y, p.angle || 0, zones);
+
+    // Sync validity with props when not dragging
+    useEffect(() => {
+        if (!isDragging.current) {
+            validityAnim.setValue(isValidFromProps ? 1 : 0);
+        }
+    }, [isValidFromProps]);
 
     // Use Animated Values for high-perf visuals
     // bodyPan: Lags behind with physics (shading)
     // widgetPan: Follows finger 1:1 (handles/remove btn)
+    // rotationAnim: Handles smooth rotation without re-renders
     const bodyPan = useRef(new Animated.ValueXY({ x: p.x, y: p.y })).current;
     const widgetPan = useRef(new Animated.ValueXY({ x: p.x, y: p.y })).current;
-    const isDragging = useRef(false);
+    const rotationAnim = useRef(new Animated.Value(p.angle || 0)).current;
 
     // Sync Props to Animated Values (Only if not dragging)
     useEffect(() => {
         if (!isDragging.current) {
             bodyPan.setValue({ x: p.x, y: p.y });
             widgetPan.setValue({ x: p.x, y: p.y });
+            rotationAnim.setValue(p.angle || 0);
         }
-    }, [p.x, p.y]);
+    }, [p.x, p.y, p.angle]);
 
-    // Use local ref for physics calculation
+    // Use local refs for real-time tracking during drag without re-renders
     const posRef = useRef({ x: p.x, y: p.y });
+    const angleRef = useRef(p.angle || 0);
 
     // Center Drag (Move)
     const movePan = useRef(
@@ -660,14 +716,14 @@ const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones }) => {
                 targetX = Math.max(W / 2, Math.min(GAME.width - W / 2, targetX));
                 targetY = Math.max(H / 2, Math.min(GAME.height - H / 2, targetY));
 
-                // 1. Update Widgets & Body (Unified Lagging Physics)
-                widgetPan.setValue({ x: targetX, y: targetY }); // If we want widgets to lead, otherwise set to newX/Y
+                // 1. Widgets follow finger directly (no LERP)
+                widgetPan.setValue({ x: targetX, y: targetY });
 
                 // 2. Snap Target to 2px grid for Body
                 const snapTargetX = Math.round(targetX / 2) * 2;
                 const snapTargetY = Math.round(targetY / 2) * 2;
 
-                // 3. Physics Loop (LERP 0.5)
+                // 3. Physics Loop (LERP 0.25) - Body lags behind with heavier feel
                 const currentX = posRef.current.x;
                 const currentY = posRef.current.y;
                 const lerp = 0.5;
@@ -680,18 +736,34 @@ const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones }) => {
 
                 posRef.current = { x: newX, y: newY };
 
-                // Update Body & Widget Visuals (Synced Lagging)
+                // Update Body visual (lags with LERP)
                 bodyPan.setValue({ x: newX, y: newY });
-                widgetPan.setValue({ x: newX, y: newY });
-                // Logical Update
-                onUpdate(i, { x: Math.round(newX), y: Math.round(newY) });
+
+                // Update live validity for visual feedback (Animated for sync)
+                // Note: using angleRef.current here for live rotation
+                const nowValid = isPlacementValid(newX, newY, angleRef.current, zones);
+                validityAnim.setValue(nowValid ? 1 : 0);
+
+                // NO LONGER CALLING onUpdate(i, ...) HERE TO PREVENT RE-RENDERS
             },
             onPanResponderRelease: () => {
                 isDragging.current = false;
                 const { x, y } = posRef.current;
-                if (!isPlacementValid(x, y, pRef.current.angle || 0, zones)) {
-                    onUpdate(i, { x: pRef.current.startX, y: pRef.current.startY });
+                const finalAngle = angleRef.current;
+
+                if (!isPlacementValid(x, y, finalAngle, zones)) {
+                    // Revert to start position and starting angle
+                    onUpdate(i, { x: pRef.current.startX, y: pRef.current.startY, angle: pRef.current.startPlatformAngle });
+                    bodyPan.setValue({ x: pRef.current.startX, y: pRef.current.startY });
+                    widgetPan.setValue({ x: pRef.current.startX, y: pRef.current.startY });
+                } else {
+                    // Commit the move and current angle
+                    onUpdate(i, { x: Math.round(x), y: Math.round(y), angle: finalAngle });
+                    widgetPan.setValue({ x: Math.round(x), y: Math.round(y) });
                 }
+                // Reset validity to match final position
+                const finalValid = isPlacementValid(pRef.current.x, pRef.current.y, pRef.current.angle || 0, zones);
+                validityAnim.setValue(finalValid ? 1 : 0);
             }
         })
     ).current;
@@ -740,81 +812,116 @@ const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones }) => {
             // Apply to stored platform angle
             let newAngle = pRef.current.startPlatformAngle + deltaAngle;
 
-            // Snapping: 2 degrees (REVERTED from 3)
+            // Snapping: 2 degrees
             const deg = newAngle * 180 / Math.PI;
             const snappedDeg = Math.round(deg / 2) * 2;
             newAngle = snappedDeg * Math.PI / 180;
 
-            // Check validity with new angle
-            // We use REF for position because we might not have moved, but we are rotating
-            // Actually rotating keeps same center x/y.
-            // But we need to update parent to see visual changes?
-            // Yes, onUpdate calls parent state update => rerender => prop update => effect => ref update.
-            // So onNext move, pRef is fresh.
-            // BUT, `onUpdate` is async-ish (React batching).
-            // For checking 'live' validity during drag, we rely on parent rendering the red border based on `isPlacementValid(p.x, p.y, p.angle)`.
-            // So we just push the new angle.
+            // Update live angle ref for validity check and visually
+            angleRef.current = newAngle;
+            rotationAnim.setValue(newAngle);
 
-            onUpdate(i, { angle: newAngle });
+            // Update live validity for visual feedback
+            const nowValid = isPlacementValid(posRef.current.x, posRef.current.y, newAngle, zones);
+            validityAnim.setValue(nowValid ? 1 : 0);
+
+            // NO LONGER CALLING onUpdate HERE TO PREVENT RE-RENDERS
         },
         onPanResponderRelease: () => {
             // Check final validity
-            const { x, y, angle } = pRef.current;
-            if (!isPlacementValid(x, y, angle || 0, zones)) {
+            const { x, y } = posRef.current;
+            const finalAngle = angleRef.current;
+            if (!isPlacementValid(x, y, finalAngle, zones)) {
                 // Revert rotation to start
-                onUpdate(i, { angle: pRef.current.startPlatformAngle });
+                onUpdate(i, { x: pRef.current.startX, y: pRef.current.startY, angle: pRef.current.startPlatformAngle });
+                bodyPan.setValue({ x: pRef.current.startX, y: pRef.current.startY });
+                widgetPan.setValue({ x: pRef.current.startX, y: pRef.current.startY });
+            } else {
+                // Commit the final position and final angle
+                onUpdate(i, { x: Math.round(x), y: Math.round(y), angle: finalAngle });
+                widgetPan.setValue({ x: Math.round(x), y: Math.round(y) });
             }
             // Clean up
-            pRef.current.startPlatformAngle = pRef.current.angle || 0;
+            pRef.current.startPlatformAngle = angleRef.current;
         }
     });
 
     const leftRotPan = useRef(createRotPan()).current;
     const rightRotPan = useRef(createRotPan()).current;
 
-    const deg = (p.angle || 0) * 180 / Math.PI;
+    // Interpolate rotation for smooth animated rotation without re-renders
+    const rotationDeg = rotationAnim.interpolate({
+        inputRange: [-Math.PI * 2, Math.PI * 2],
+        outputRange: ['-360deg', '360deg']
+    });
 
     return (
-        <Animated.View style={[styles.dragPlat, {
-            transform: [
-                { translateX: bodyPan.x },
-                { translateY: bodyPan.y },
-                { rotate: `${deg}deg` }
-            ],
-            width: TOTAL_W,
-            height: TOTAL_H,
-            marginLeft: -TOTAL_W / 2,
-            marginTop: -TOTAL_H / 2,
-            zIndex: 10,
-        }]}>
-            {/* Left Handle */}
-            <View style={[styles.rotHandle, { marginRight: 5 }]} {...leftRotPan.panHandlers}>
-                <Text style={styles.handleTxt}>⟳</Text>
-            </View>
-
-            {/* Platform Body (Unified Layer) */}
-            <View
-                style={{
-                    width: W, height: H,
-                    backgroundColor: isValid ? 'transparent' : 'rgba(239, 68, 68, 0.5)',
-                    borderColor: isValid ? 'rgba(255,255,255,0.3)' : 'rgba(239, 68, 68, 1)',
-                    borderWidth: 1,
-                    borderRadius: 4
-                }}
+        <>
+            {/* Platform Body - Lags with LERP via bodyPan, color changes based on validity */}
+            <Animated.View
+                style={[styles.dragPlat, {
+                    transform: [
+                        { translateX: bodyPan.x },
+                        { translateY: bodyPan.y },
+                        { rotate: rotationDeg }
+                    ],
+                    width: W,
+                    height: H,
+                    marginLeft: -W / 2,
+                    marginTop: -H / 2,
+                    zIndex: 9,
+                    backgroundColor: validityAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [
+                            // Invalid: red-tinted color
+                            'rgba(200, 80, 80, 0.9)',
+                            // Valid: normal platform color
+                            type.color
+                        ]
+                    }),
+                    borderRadius: 6,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 4,
+                }]}
                 hitSlop={{ top: 30, bottom: 30, left: 10, right: 10 }}
                 {...movePan.panHandlers}
             />
 
-            {/* Right Handle */}
-            <View style={[styles.rotHandle, { marginLeft: 5 }]} {...rightRotPan.panHandlers}>
-                <Text style={styles.handleTxt}>⟲</Text>
-            </View>
+            {/* UI Widgets - Follow finger directly via widgetPan (no LERP lag) */}
+            <Animated.View style={[styles.dragPlat, {
+                transform: [
+                    { translateX: widgetPan.x },
+                    { translateY: widgetPan.y },
+                    { rotate: rotationDeg }
+                ],
+                width: TOTAL_W,
+                height: TOTAL_H,
+                marginLeft: -TOTAL_W / 2,
+                marginTop: -TOTAL_H / 2,
+                zIndex: 10,
+                pointerEvents: 'box-none', // Allow taps to pass through empty areas
+            }]}>
+                {/* Left Handle */}
+                <View style={[styles.rotHandle, { marginRight: 5 }]} {...leftRotPan.panHandlers}>
+                    <Text style={styles.handleTxt}>⟳</Text>
+                </View>
 
-            {/* Remove Button */}
-            <TouchableOpacity style={styles.removeBtn} onPress={() => onRemove(i)}>
-                <Text style={styles.removeTxt}>×</Text>
-            </TouchableOpacity>
-        </Animated.View>
+                {/* Spacer for platform body (rendered separately) */}
+                <View style={{ width: W, height: H }} pointerEvents="none" />
+
+                {/* Right Handle */}
+                <View style={[styles.rotHandle, { marginLeft: 5 }]} {...rightRotPan.panHandlers}>
+                    <Text style={styles.handleTxt}>⟲</Text>
+                </View>
+
+                {/* Remove Button */}
+                <TouchableOpacity style={styles.removeBtn} onPress={() => onRemove(i)}>
+                    <Text style={styles.removeTxt}>×</Text>
+                </TouchableOpacity>
+            </Animated.View>
+        </>
     );
 };
 

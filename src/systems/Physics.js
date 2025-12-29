@@ -23,8 +23,8 @@ const Physics = (entities, { time, dispatch }) => {
     const frameTime = Math.min(time.delta, 50);
     entities.physics.accumulator += frameTime;
 
-    // Consume time in fixed steps
-    const fixedStep = 16.666;
+    // Consume time in fixed steps (8.333ms = 120Hz for better collision detection)
+    const fixedStep = 8.333;
     while (entities.physics.accumulator >= fixedStep) {
 
         // 1. APPLY FORCES (Fans) BEFORE UPDATE

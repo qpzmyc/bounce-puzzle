@@ -114,7 +114,8 @@ const levels = [
         balls: [{ x: 50, y: 200 }],
         goal: { x: 300, y: 230, width: 40, height: 40 }, // Goal moved Lower (150 -> 180) for easier shot
         walls: [
-            { x: 170, y: 190, width: 15, height: 380 }, // Wall extended LOWER (height 260->360, y 130->180) to force tight angle
+            { x: 175, y: 190, width: 15, height: 380 }, // Wall extended LOWER (height 260->360, y 130->180) to force tight angle
+            { x: 175, y: 0, width: 350, height: 10 },
         ],
         platforms: { normal: 0, sticky: 0, super: 4 },
         fans: [],
@@ -509,7 +510,7 @@ const levels = [
             { x: 175, y: 100, width: 10, height: 200 },
             { x: 175, y: 0, width: 350, height: 20 },
         ],
-        platforms: { normal: 1, sticky: 0, super: 5 },
+        platforms: { normal: 1, sticky: 0, super: 4 },
         fans: [
             { x: 120, y: 450, width: 40, height: 40, direction: 'up' },
             { x: 200, y: 20, width: 40, height: 40, direction: 'down' }
