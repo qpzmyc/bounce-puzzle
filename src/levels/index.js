@@ -50,7 +50,7 @@ const levels = [
         platforms: { normal: 4, sticky: 0, super: 0 },
         fans: [],
         spikes: [
-            { x: 120, y: 200, width: 100, height: 15 } // Middle spike
+            { x: 120, y: 200, width: 100, height: 15, direction: 'up' } // Middle spike
         ],
         noPlaceZones: [],
     },
@@ -130,9 +130,10 @@ const levels = [
         balls: [{ x: 170, y: 50 }],
         goal: { x: 170, y: 450, width: 40, height: 40 },
         walls: [
-            { x: 345, y: 240, width: 15, height: 480 },
+            { x: 280, y: 260, width: 80, height: 10 },
+            { x: 60, y: 400, width: 80, height: 10 },
         ],
-        platforms: { normal: 2, sticky: 2, super: 0 },
+        platforms: { normal: 1, sticky: 2, super: 0 },
         fans: [
             { x: 10, y: 150, width: 40, height: 40, direction: 'right' },
             { x: 290, y: 300, width: 40, height: 40, direction: 'left' },
@@ -140,12 +141,12 @@ const levels = [
             { x: 10, y: 105, width: 40, height: 40, direction: 'right' },
         ],
         spikes: [
-            { x: 260, y: 240, width: 80, height: 15 },  // Lowered from 180 to 240
-            { x: 10, y: 380, width: 80, height: 15 },   // Bottom left
+            { x: 240, y: 240, width: 80, height: 10, direction: 'up' },  // Lowered from 180 to 240
+            { x: 20, y: 380, width: 80, height: 10, direction: 'up' },   // Bottom left
         ],
         noPlaceZones: [
             { x: 280, y: 200, width: 100, height: 150 },
-            { x: 50, y: 340, width: 100, height: 150 },
+            { x: 60, y: 340, width: 100, height: 150 },
         ],
     },
 
@@ -166,8 +167,8 @@ const levels = [
         fans: [],
         spikes: [
             // Spikes covering entire mid platform except the gap (x=160-180)
-            { x: 0, y: 275, width: 155, height: 10 },    // Left side spikes (up to gap)
-            { x: 185, y: 275, width: 155, height: 10 },  // Right side spikes (after gap)
+            { x: 0, y: 275, width: 155, height: 10, direction: 'up' },    // Left side spikes (up to gap)
+            { x: 185, y: 275, width: 155, height: 10, direction: 'up' },  // Right side spikes (after gap)
         ],
         noPlaceZones: [
             { x: 200, y: 140, width: 20, height: 260 }, // Gap
@@ -177,21 +178,33 @@ const levels = [
     // 10. BOSS: The Mix
     {
         id: 10,
-        name: "First Test",
+        name: "Upside Down Chute",
         description: "Use everything you learned.",
-        balls: [{ x: 50, y: 50 }, { x: 300, y: 50 }],
-        goal: { x: 170, y: 400, width: 60, height: 20 },
+        balls: [{ x: 50, y: 400 }, { x: 300, y: 400 }],
+        goal: { x: 170, y: 20, width: 40, height: 40 },
         walls: [
-            { x: 345, y: 240, width: 15, height: 480 },
-            { x: 170, y: 200, width: 10, height: 200 }, // Center divider
+            { x: 155, y: 85, width: 10, height: 160 },
+            { x: 225, y: 85, width: 10, height: 160 },
+            { x: 30, y: 260, width: 60, height: 10 },
+            { x: 245, y: 260, width: 270, height: 10 },
         ],
-        platforms: { normal: 1, sticky: 1, super: 1 },
+        platforms: { normal: 6, sticky: 2, super: 0 },
         fans: [
-            { x: 170, y: 100, width: 40, height: 40, direction: 'left' }
+            { x: 10, y: 450, width: 40, height: 40, direction: 'up' },
+            { x: 57, y: 450, width: 40, height: 40, direction: 'up' },
+            { x: 104, y: 450, width: 40, height: 40, direction: 'up' },
+            { x: 151, y: 450, width: 40, height: 40, direction: 'up' },
+            { x: 198, y: 450, width: 40, height: 40, direction: 'up' },
+            { x: 245, y: 450, width: 40, height: 40, direction: 'up' },
+            { x: 292, y: 450, width: 40, height: 40, direction: 'up' },
         ],
         spikes: [
-            { x: 80, y: 300, width: 40, height: 10 },
-            { x: 260, y: 300, width: 40, height: 10 }
+            { x: 0, y: 270, width: 60, height: 10, direction: 'down' },
+            { x: 110, y: 270, width: 270, height: 10, direction: 'down' },
+            { x: 0, y: 0, width: 350, height: 10, direction: 'down' },
+            { x: 165, y: 5, width: 10, height: 160, direction: 'right' },
+            { x: 205, y: 5, width: 10, height: 160, direction: 'left' },
+
         ],
         noPlaceZones: [],
     },
@@ -204,16 +217,18 @@ const levels = [
         balls: [{ x: 50, y: 50 }],
         goal: { x: 280, y: 450, width: 40, height: 40 },
         walls: [
-            { x: 160, y: 275, width: 10, height: 300 }, // Divider
+            { x: 160, y: 285, width: 10, height: 80 }, // Divider
+            { x: 160, y: 165, width: 10, height: 80 }, // Divider
+            { x: 65, y: 300, width: 110, height: 10 }, // Divider
         ],
         platforms: { normal: 2, sticky: 2, super: 0 }, // Added 2 extra sticky (1->3)
         fans: [
             { x: 250, y: 200, width: 40, height: 40, direction: 'left' }
         ],
         spikes: [
-            { x: 0, y: 280, width: 120, height: 10 }, // Moved decent bit left (center 70 -> 50)
-        ]
-        ,
+            { x: 10, y: 280, width: 110, height: 10, direction: 'up' }, // Moved decent bit left (center 70 -> 50)
+        ],
+
         noPlaceZones: [],
     },
 
@@ -223,11 +238,12 @@ const levels = [
         name: "Ascension",
         description: "Ride the wind up.",
         balls: [{ x: 50, y: 450 }],
-        goal: { x: 20, y: 200, width: 40, height: 40 },
+        goal: { x: 120, y: 200, width: 40, height: 40 },
         walls: [
             { x: 130, y: 250, width: 240, height: 10 },
             { x: 290, y: 10, width: 120, height: 10 },
-            { x: 80, y: 210, width: 10, height: 70 },
+            { x: 110, y: 210, width: 10, height: 70 },
+            { x: 170, y: 210, width: 10, height: 70 },
         ],
         platforms: { normal: 1, sticky: 0, super: 2 },
         fans: [
@@ -256,12 +272,11 @@ const levels = [
         ],
         spikes: [
             // Spikes inside tunnel (Extended left: x 200, width 200)
-            { x: 130, y: 255, width: 220, height: 10 }, // Ceiling spikes
-            { x: 130, y: 310, width: 220, height: 10 }, // Floor spikes (Raised)
+            { x: 130, y: 260, width: 220, height: 10, direction: 'down' }, // Ceiling spikes
+            { x: 130, y: 310, width: 220, height: 10, direction: 'up' }, // Floor spikes (Raised)
         ],
         noPlaceZones: [
             { x: 260, y: 280, width: 180, height: 75 }, // Ceiling no place zone
-
         ],
     },
 
@@ -271,12 +286,13 @@ const levels = [
         name: "The Loop",
         description: "Redirect momentum.",
         balls: [{ x: 50, y: 100 }],
-        goal: { x: 50, y: 300, width: 40, height: 40 },
+        goal: { x: 50, y: 350, width: 40, height: 40 },
         walls: [
-            { x: 175, y: 200, width: 10, height: 200 }, // Barrier
+            { x: 175, y: 230, width: 10, height: 150 }, // Barrier
+            { x: 175, y: 400, width: 10, height: 110 }, // Barrier
             { x: 120, y: 0, width: 230, height: 10 },
         ],
-        platforms: { normal: 2, sticky: 1, super: 1 },
+        platforms: { normal: 2, sticky: 2, super: 1 },
         fans: [
             // 3 Upward fans below goal to prevent straight drop
             { x: 20, y: 400, width: 40, height: 40, direction: 'up' },
@@ -295,7 +311,7 @@ const levels = [
         name: "Double Dunk",
         description: "Drop in from above.",
         balls: [{ x: 50, y: 110 }, { x: 100, y: 230 }], // Start low left
-        goal: { x: 300, y: 400, width: 30, height: 30 }, // In box bottom right
+        goal: { x: 290, y: 400, width: 40, height: 40 }, // In box bottom right
         walls: [
             { x: 280, y: 400, width: 10, height: 100 }, // Left wall of bunker
             { x: 310, y: 450, width: 60, height: 10 },  // Roof (with gap?) No, open top.
@@ -304,7 +320,7 @@ const levels = [
         platforms: { normal: 0, sticky: 0, super: 3 }, // Need to super jump over
         fans: [],
         spikes: [
-            { x: 0, y: 335, width: 280, height: 10 } // Floor hazard
+            { x: 0, y: 335, width: 280, height: 10, direction: 'up' } // Floor hazard
         ],
         noPlaceZones: [
             { x: 250, y: 250, width: 160, height: 500 }, // Left wall of bunker
@@ -314,12 +330,12 @@ const levels = [
     // 16. Switchback
     {
         id: 16,
-        name: "Switchback",
+        name: "Strong Current",
         description: "Zig zag down.",
         balls: [{ x: 50, y: 80 }],
         goal: { x: 150, y: 450, width: 40, height: 40 },
         walls: [],
-        platforms: { normal: 7, sticky: 0, super: 0 },
+        platforms: { normal: 5, sticky: 0, super: 0 },
         fans: [
             { x: 30, y: 0, width: 40, height: 40, direction: 'down' },
             { x: 100, y: 0, width: 40, height: 40, direction: 'down' },
@@ -332,24 +348,7 @@ const levels = [
             { x: 270, y: 100, width: 40, height: 40, direction: 'left' },
         ],
         spikes: [
-            { x: 5, y: 100, width: 20, height: 10 },
-            { x: 5, y: 120, width: 20, height: 10 },
-            { x: 5, y: 140, width: 20, height: 10 },
-            { x: 5, y: 160, width: 20, height: 10 },
-            { x: 5, y: 180, width: 20, height: 10 },
-            { x: 5, y: 200, width: 20, height: 10 },
-            { x: 5, y: 220, width: 20, height: 10 },
-            { x: 5, y: 240, width: 20, height: 10 },
-            { x: 5, y: 260, width: 20, height: 10 },
-            { x: 5, y: 280, width: 20, height: 10 },
-            { x: 5, y: 300, width: 20, height: 10 },
-            { x: 5, y: 320, width: 20, height: 10 },
-            { x: 5, y: 340, width: 20, height: 10 },
-            { x: 5, y: 360, width: 20, height: 10 },
-            { x: 5, y: 380, width: 20, height: 10 },
-            { x: 5, y: 400, width: 20, height: 10 },
-            { x: 5, y: 420, width: 20, height: 10 },
-            { x: 5, y: 440, width: 20, height: 10 },
+            { x: 10, y: 0, width: 10, height: 500, direction: 'right' },
         ]
     },
 
@@ -369,14 +368,14 @@ const levels = [
             { x: 325, y: 250, width: 50, height: 10 },
             { x: 125, y: 250, width: 250, height: 10 },
         ],
-        platforms: { normal: 1, sticky: 4, super: 2 }, // Chain super jumps
+        platforms: { normal: 1, sticky: 2, super: 2 }, // Chain super jumps
         fans: [],
         spikes: [
-            { x: 0, y: 120, width: 100, height: 10 },
-            { x: 150, y: 120, width: 200, height: 10 },
-            { x: 300, y: 230, width: 50, height: 10 },
-            { x: 0, y: 230, width: 250, height: 10 },
-            { x: 120, y: 310, width: 100, height: 10 },
+            { x: 0, y: 120, width: 100, height: 10, direction: 'up' },
+            { x: 150, y: 120, width: 200, height: 10, direction: 'up' },
+            { x: 300, y: 230, width: 50, height: 10, direction: 'up' },
+            { x: 0, y: 230, width: 250, height: 10, direction: 'up' },
+            { x: 120, y: 310, width: 100, height: 10, direction: 'up' },
         ],
         noPlaceZones: [
             { x: 175, y: 340, width: 350, height: 200 },
@@ -391,20 +390,22 @@ const levels = [
         balls: [{ x: 30, y: 50 }, { x: 45, y: 80 }, { x: 60, y: 110 }],
         goal: { x: 220, y: 360, width: 40, height: 40 }, // CENTER
         walls: [
-            { x: 175, y: 490, width: 350, height: 30 },
+            { x: 175, y: 480, width: 350, height: 10 },
             { x: 180, y: 350, width: 180, height: 10 },
             { x: 180, y: 410, width: 180, height: 10 },
             { x: 135, y: 200, width: 270, height: 10 },
             { x: 265, y: 130, width: 350, height: 10 },
             { x: 270, y: 305, width: 10, height: 220 }, // Center divider
         ],
-        platforms: { normal: 2, sticky: 2, super: 1 },
+        platforms: { normal: 2, sticky: 1, super: 1 },
         fans: [
             { x: 0, y: 140, width: 40, height: 40, direction: 'right' },
             { x: 290, y: 210, width: 40, height: 40, direction: 'down' },
-            { x: 210, y: 425, width: 40, height: 40, direction: 'left' },
+            { x: 230, y: 425, width: 40, height: 40, direction: 'left' },
         ],
-        spikes: [],
+        spikes: [
+            { x: 90, y: 330, width: 175, height: 10, direction: 'up' },
+        ],
         noPlaceZones: [],
     },
 
@@ -433,11 +434,12 @@ const levels = [
             { x: 275, y: 270, width: 150, height: 10 },
 
         ],
-        platforms: { normal: 8, sticky: 2, super: 1 }, // TONS of platforms
+        platforms: { normal: 6, sticky: 3, super: 1 }, // TONS of platforms
         fans: [],
         spikes: [
-            { x: 0, y: 250, width: 150, height: 10 },
-            { x: 200, y: 250, width: 150, height: 10 },
+            { x: 0, y: 250, width: 150, height: 10, direction: 'up' },
+            { x: 200, y: 250, width: 150, height: 10, direction: 'up' },
+            { x: 220, y: 380, width: 115, height: 10, direction: 'up' },
         ],
         noPlaceZones: [
             { x: 175, y: 300, width: 350, height: 150 },
@@ -453,8 +455,12 @@ const levels = [
         goal: { x: 185, y: 50, width: 40, height: 40 }, // Top right
         walls: [
             { x: 175, y: 150, width: 10, height: 300 }, // Vertical divider
+            { x: 210, y: 300, width: 140, height: 10 }, // Vertical divider
+            { x: 210, y: 340, width: 140, height: 10 }, // Vertical divider
+            { x: 145, y: 320, width: 10, height: 40 }, // Vertical divider
+            { x: 275, y: 320, width: 10, height: 40 }, // Vertical divider
         ],
-        platforms: { normal: 2, sticky: 2, super: 2 },
+        platforms: { normal: 2, sticky: 2, super: 1 },
         fans: [
             { x: 20, y: 350, width: 40, height: 40, direction: 'right' }, // Bottom left pusher
             { x: 170, y: 480, width: 40, height: 40, direction: 'up' },   // Bottom right lifter
@@ -462,8 +468,9 @@ const levels = [
             { x: 290, y: 480, width: 40, height: 40, direction: 'up' },   // Bottom right lifter
         ],
         spikes: [
-            { x: 140, y: 320, width: 140, height: 40 }, // Center hazard
-            { x: 140, y: 400, width: 140, height: 40 }, // Center hazard
+            { x: 140, y: 350, width: 140, height: 10, direction: 'down' }, // Center hazard
+            { x: 140, y: 390, width: 140, height: 10, direction: 'up' }, // Center hazard
+            { x: 140, y: 410, width: 140, height: 10, direction: 'down' }, // Vertical divider
         ],
         noPlaceZones: [
             { x: 260, y: 250, width: 180, height: 300 }, // Vertical divider
@@ -488,8 +495,8 @@ const levels = [
             { x: 220, y: 450, width: 40, height: 40, direction: 'up' }
         ],
         spikes: [
-            { x: 0, y: 0, width: 350, height: 10 },
-            { x: 140, y: 260, width: 70, height: 10 },
+            { x: 0, y: 0, width: 350, height: 10, direction: 'down' },
+            { x: 140, y: 260, width: 70, height: 10, direction: 'down' },
         ],
         noPlaceZones: [
             { x: 175, y: 250, width: 350, height: 200 },
@@ -516,33 +523,47 @@ const levels = [
             { x: 200, y: 20, width: 40, height: 40, direction: 'down' }
         ],
         spikes: [
-            { x: 175, y: 550, width: 350, height: 10 }
+            { x: 175, y: 550, width: 350, height: 10, direction: 'up' }
         ],
-        noPlaceZones: [
-            { x: 87, y: 300, width: 175, height: 300 },
-
-        ],
+        noPlaceZones: [],
     },
 
     // 23. Bonus III (66 Stars)
     {
         id: 23,
-        name: "Star Gate III",
+        name: "Isaac's Gauntlet",
         description: "The Ultimate Test.",
         requiredStars: 66,
-        balls: [{ x: 175, y: 50 }],
-        goal: { x: 175, y: 550, width: 20, height: 20 },
-        walls: [],
-        platforms: { normal: 5, sticky: 5, super: 5 },
+        balls: [{ x: 175, y: 50 }, { x: 250, y: 470 }],
+        goal: { x: 315, y: 490, width: 20, height: 20 },
+        walls: [
+            { x: 310, y: 470, width: 10, height: 50 },
+            { x: 265, y: 85, width: 10, height: 170 },
+            { x: 307.5, y: 0, width: 85, height: 10 },
+            { x: 157.5, y: 170, width: 225, height: 10 },
+            { x: 100, y: 305, width: 200, height: 10 },
+            { x: 160, y: 450, width: 220, height: 10 },
+            { x: 160, y: 490, width: 220, height: 10 },
+        ],
+        platforms: { normal: 4, sticky: 2, super: 2 },
         fans: [
-            { x: 50, y: 150, width: 40, height: 40, direction: 'right' },
-            { x: 300, y: 300, width: 40, height: 40, direction: 'left' },
-            { x: 50, y: 450, width: 40, height: 40, direction: 'right' }
+            { x: 50, y: 120, width: 40, height: 40, direction: 'right' },
+            { x: 250, y: 250, width: 40, height: 40, direction: 'left' },
+            { x: 50, y: 380, width: 40, height: 40, direction: 'right' },
+            { x: 270, y: 480, width: 40, height: 40, direction: 'up' },
         ],
         spikes: [
-            { x: 175, y: 300, width: 20, height: 20 }
+            { x: 300, y: 430, width: 20, height: 10, direction: 'up' },
+            { x: 245, y: 0, width: 10, height: 165, direction: 'left' },
+            { x: 10, y: 200, width: 10, height: 100, direction: 'right' },
+            { x: 50, y: 430, width: 220, height: 10, direction: 'up' },
         ],
-        noPlaceZones: [],
+        noPlaceZones: [
+            { x: 25, y: 150, width: 40, height: 300 },
+            { x: 180, y: 470, width: 180, height: 34 },
+            { x: 90, y: 370, width: 170, height: 120 },
+            { x: 302.5, y: 315, width: 65, height: 450 },
+        ],
     }
 ];
 

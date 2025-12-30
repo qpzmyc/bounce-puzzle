@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated, PanResponder } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated, PanResponder, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context'; // Fixed Import
 import { GameEngine } from 'react-native-game-engine';
 import Matter from 'matter-js';
@@ -14,7 +14,8 @@ import BallTrail from '../components/BallTrail';
 import Physics from '../systems/Physics';
 import { COLORS, PHYSICS, GAME, PLATFORM_TYPES } from '../utils/constants';
 import levels from '../levels';
-import { saveLevelProgress } from '../utils/storage';
+import { saveLevelProgress, getLevelProgress } from '../utils/storage';
+import { getTotalStars, getNextLevelOrRedirect } from '../utils/gameLogic';
 
 const { width: SW, height: SH } = Dimensions.get('window');
 
@@ -162,7 +163,12 @@ const GameScreen = ({ route, navigation }) => {
         });
 
         (level.spikes || []).forEach((s, i) => {
-            ents[`spike${i}`] = { position: { x: s.x, y: s.y }, size: { width: s.width, height: s.height }, renderer: Spike };
+            ents[`spike${i}`] = {
+                position: { x: s.x, y: s.y },
+                size: { width: s.width, height: s.height },
+                direction: s.direction || 'up',
+                renderer: Spike
+            };
         });
 
         // Add GLOBAL FLOOR SPIKE
@@ -352,11 +358,40 @@ const GameScreen = ({ route, navigation }) => {
         setGameState('setup');
     };
 
-    const handleNext = () => {
+    const handleNext = async () => {
         setLastTrail([]);  // Clear trail when moving to next level
         setLiveTrail([]);
-        const n = levels.find(l => l.id === levelId + 1);
-        navigation.navigate(n ? 'Game' : 'Menu', n ? { levelId: n.id } : undefined);
+        const nextLevel = levels.find(l => l.id === levelId + 1);
+
+        if (!nextLevel) {
+            // No more levels, go to menu
+            navigation.navigate('Menu');
+            return;
+        }
+
+        // Check if next level has a star requirement
+        if (nextLevel.requiredStars) {
+            const progress = await getLevelProgress();
+            const totalStars = getTotalStars(progress);
+
+            if (totalStars < nextLevel.requiredStars) {
+                // Player doesn't have enough stars
+                const { levelId: quickPlayLevelId } = getNextLevelOrRedirect(levels, progress);
+
+                Alert.alert(
+                    "Level Locked",
+                    `This bonus level requires ${nextLevel.requiredStars} stars to unlock.\nYou currently have ${totalStars} stars.`,
+                    [
+                        { text: "Main Menu", onPress: () => navigation.navigate('Menu') },
+                        { text: "Continue Playing", onPress: () => navigation.navigate('Game', { levelId: quickPlayLevelId }) }
+                    ]
+                );
+                return;
+            }
+        }
+
+        // Proceed to next level
+        navigation.navigate('Game', { levelId: nextLevel.id });
     };
 
     const handleEvent = (e) => {
@@ -371,13 +406,36 @@ const GameScreen = ({ route, navigation }) => {
 
     const addPlatform = (type) => {
         if (getRemainingByType(type) > 0 && gameState === 'setup') {
-            const yOffset = 180 + (placedPlatforms.length * 40);
-            setPlacedPlatforms([...placedPlatforms, {
-                x: GAME.width / 2,
-                y: Math.min(yOffset, GAME.height - 100),
-                angle: 0,
-                type
-            }]);
+            let x = GAME.width / 2;
+            let y = Math.min(180 + (placedPlatforms.length * 40), GAME.height - 100);
+
+            // Shift 6px down-right until valid placement found
+            const maxAttempts = 50; // Prevent infinite loop
+            for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                // Check if valid placement (not in no-place zone)
+                const isValid = isPlacementValid(x, y, 0, level.noPlaceZones);
+
+                // Check for exact duplicate position with existing platforms
+                const isDuplicate = placedPlatforms.some(p => p.x === x && p.y === y);
+
+                if (isValid && !isDuplicate) {
+                    break; // Found a valid spot
+                }
+
+                // Shift 6px down and right
+                x += 6;
+                y += 6;
+
+                // Wrap around if we go too far
+                if (x > GAME.width - PHYSICS.platformWidth / 2) {
+                    x = PHYSICS.platformWidth / 2;
+                }
+                if (y > GAME.height - PHYSICS.platformHeight / 2) {
+                    y = PHYSICS.platformHeight / 2;
+                }
+            }
+
+            setPlacedPlatforms([...placedPlatforms, { x, y, angle: 0, type }]);
         }
     };
 
@@ -434,25 +492,34 @@ const GameScreen = ({ route, navigation }) => {
 
         // Add Y offset so platform appears ABOVE finger for better visibility
         const bankDragOffsetY = -50;
-        const targetY = Math.max(PHYSICS.platformHeight / 2, targetPos.gameY + bankDragOffsetY);
+        let targetX = targetPos.gameX;
+        let targetY = Math.max(PHYSICS.platformHeight / 2, targetPos.gameY + bankDragOffsetY);
 
-        // LERP Damping: Move current pos towards target pos
-        // Factor 0.3 provides a nice heavy feel matching existing platforms
-        const lerp = 0.3;
+        // Bound to game area (matching platform movement)
+        const W = PHYSICS.platformWidth;
+        const H = PHYSICS.platformHeight;
+        targetX = Math.max(W / 2, Math.min(GAME.width - W / 2, targetX));
+        targetY = Math.max(H / 2, Math.min(GAME.height - H / 2, targetY));
+
+        // Snap TARGET to 2px grid BEFORE LERP (matching platform movement)
+        const snapTargetX = Math.round(targetX / 2) * 2;
+        const snapTargetY = Math.round(targetY / 2) * 2;
+
+        // LERP 0.7 (faster response for bank drag)
+        const lerp = 0.7;
         const currentX = dragPosRef.current.x;
         const currentY = dragPosRef.current.y;
 
-        const newX = currentX + (targetPos.gameX - currentX) * lerp;
-        const newY = currentY + (targetY - currentY) * lerp;
+        const dx = snapTargetX - currentX;
+        const dy = snapTargetY - currentY;
+
+        const newX = currentX + dx * lerp;
+        const newY = currentY + dy * lerp;
 
         dragPosRef.current = { x: newX, y: newY };
 
-        // Snapping: 2px
-        const snappedX = Math.round(newX / 2) * 2;
-        const snappedY = Math.round(newY / 2) * 2;
-
-        const isValid = targetPos.isInBounds && isPlacementValid(snappedX, snappedY, 0, level.noPlaceZones);
-        setDraggingPlatform({ type, gameX: snappedX, gameY: snappedY, isValid });
+        const isValid = targetPos.isInBounds && isPlacementValid(newX, newY, 0, level.noPlaceZones);
+        setDraggingPlatform({ type, gameX: newX, gameY: newY, isValid });
     }, [level]);
 
     const handleDragRelease = React.useCallback((type, evt) => {
@@ -702,6 +769,7 @@ const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones }) => {
 
                 pRef.current.startX = currentP.x;
                 pRef.current.startY = currentP.y;
+                pRef.current.startPlatformAngle = currentP.angle || 0; // Store angle for revert
             },
             onPanResponderMove: (evt) => {
                 const touchX = evt.nativeEvent.pageX;
@@ -756,6 +824,8 @@ const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones }) => {
                     onUpdate(i, { x: pRef.current.startX, y: pRef.current.startY, angle: pRef.current.startPlatformAngle });
                     bodyPan.setValue({ x: pRef.current.startX, y: pRef.current.startY });
                     widgetPan.setValue({ x: pRef.current.startX, y: pRef.current.startY });
+                    rotationAnim.setValue(pRef.current.startPlatformAngle); // Reset rotation visual
+                    angleRef.current = pRef.current.startPlatformAngle; // Reset angle ref
                 } else {
                     // Commit the move and current angle
                     onUpdate(i, { x: Math.round(x), y: Math.round(y), angle: finalAngle });
@@ -775,42 +845,54 @@ const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones }) => {
         return angle;
     };
 
-    // Angle-based Rotation Logic - tracks angle from platform center to finger
-    const createRotPan = () => PanResponder.create({
+    // Point-to-Finger Rotation Logic
+    // The platform end closest to the touched handle points toward the finger
+    // direction: 'left' means left end points at finger, 'right' means right end points at finger
+    const createRotPan = (direction) => PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onPanResponderGrant: (evt) => {
-            // Store starting platform angle
+            // Store starting platform angle for revert
             pRef.current.startPlatformAngle = pRef.current.angle || 0;
-
-            // Get touch position in game coordinates
-            const touchX = evt.nativeEvent.pageX;
-            const touchY = evt.nativeEvent.pageY;
-
-            // Store these for calculating initial angle
-            pRef.current.grantTouchX = touchX;
-            pRef.current.grantTouchY = touchY;
+            // Also store starting position for revert (even if we don't move X/Y during rotation)
+            pRef.current.startX = pRef.current.x;
+            pRef.current.startY = pRef.current.y;
         },
         onPanResponderMove: (evt) => {
-            const { x: platX, y: platY } = pRef.current;
+            // Get platform center in screen coordinates
+            // We need to convert game coords to screen coords
+            const platX = posRef.current.x;
+            const platY = posRef.current.y;
 
-            // Current touch position
+            // Current touch position (screen coords)
             const touchX = evt.nativeEvent.pageX;
             const touchY = evt.nativeEvent.pageY;
 
-            // Calculate angle from grant position to current position
-            // Using the delta from initial touch, not absolute position
-            const grantX = pRef.current.grantTouchX;
-            const grantY = pRef.current.grantTouchY;
+            // Convert platform center to screen coords using reverse of screenToGameCoords
+            // This is approximate but works for rotation
+            const gameLayout = measuredGameAreaLayout || { x: 0, y: 140, width: GAME.width * scale, height: GAME.height * scale };
+            const screenPlatX = gameLayout.x + platX * scale;
+            const screenPlatY = gameLayout.y + platY * scale;
 
-            // Calculate angles (relative to some fixed point doesn't matter, we want delta)
-            const startAngle = Math.atan2(grantY - platY, grantX - platX);
-            const currentAngle = Math.atan2(touchY - platY, touchX - platX);
+            // Calculate angle from platform center to finger
+            const fingerAngle = Math.atan2(touchY - screenPlatY, touchX - screenPlatX);
 
-            // Delta is how much the finger angle changed - NORMALIZE to prevent jumps
-            const deltaAngle = normalizeAngle(currentAngle - startAngle);
+            // For left handle: left end should point at finger
+            // Platform's left end points at angle = platform.angle + PI (opposite of right end)
+            // So we want: platform.angle + PI = fingerAngle
+            // Therefore: platform.angle = fingerAngle - PI
+            // For right handle: right end should point at finger
+            // Platform's right end points at angle = platform.angle
+            // So we want: platform.angle = fingerAngle
 
-            // Apply to stored platform angle
-            let newAngle = pRef.current.startPlatformAngle + deltaAngle;
+            let newAngle;
+            if (direction === 'left') {
+                newAngle = fingerAngle - Math.PI;
+            } else {
+                newAngle = fingerAngle;
+            }
+
+            // Normalize to [-PI, PI]
+            newAngle = normalizeAngle(newAngle);
 
             // Snapping: 2 degrees
             const deg = newAngle * 180 / Math.PI;
@@ -824,8 +906,6 @@ const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones }) => {
             // Update live validity for visual feedback
             const nowValid = isPlacementValid(posRef.current.x, posRef.current.y, newAngle, zones);
             validityAnim.setValue(nowValid ? 1 : 0);
-
-            // NO LONGER CALLING onUpdate HERE TO PREVENT RE-RENDERS
         },
         onPanResponderRelease: () => {
             // Check final validity
@@ -836,6 +916,8 @@ const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones }) => {
                 onUpdate(i, { x: pRef.current.startX, y: pRef.current.startY, angle: pRef.current.startPlatformAngle });
                 bodyPan.setValue({ x: pRef.current.startX, y: pRef.current.startY });
                 widgetPan.setValue({ x: pRef.current.startX, y: pRef.current.startY });
+                rotationAnim.setValue(pRef.current.startPlatformAngle);
+                angleRef.current = pRef.current.startPlatformAngle;
             } else {
                 // Commit the final position and final angle
                 onUpdate(i, { x: Math.round(x), y: Math.round(y), angle: finalAngle });
@@ -846,8 +928,8 @@ const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones }) => {
         }
     });
 
-    const leftRotPan = useRef(createRotPan()).current;
-    const rightRotPan = useRef(createRotPan()).current;
+    const leftRotPan = useRef(createRotPan('left')).current;
+    const rightRotPan = useRef(createRotPan('right')).current;
 
     // Interpolate rotation for smooth animated rotation without re-renders
     const rotationDeg = rotationAnim.interpolate({
