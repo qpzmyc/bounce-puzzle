@@ -165,7 +165,7 @@ const Physics = (entities, { time, dispatch }) => {
                 }
             }
 
-            if (y > 600) {
+            if (y > 600 || y < -1000 || x < -1000 || x > 1500) {
                 anyBallLost = true;
             }
         });

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -6,26 +6,41 @@ import {
     TouchableOpacity,
     Animated,
     Dimensions,
+    Modal,
+    Switch
 } from 'react-native';
 import { COLORS } from '../utils/constants';
-import { getLevelProgress, clearProgress } from '../utils/storage';
+import { getLevelProgress, clearProgress, getSettings, saveSettings } from '../utils/storage';
 import { getNextLevelOrRedirect } from '../utils/gameLogic';
 import levels from '../levels';
 import { Alert } from 'react-native';
+import { setSoundEnabled } from '../utils/audio';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const MenuScreen = ({ navigation }) => {
     const [progress, setProgress] = React.useState({});
+    const [settingsVisible, setSettingsVisible] = useState(false);
+    const [settings, setSettings] = useState({ sound: true, haptics: true });
 
     useEffect(() => {
         getLevelProgress().then(setProgress);
+        getSettings().then(s => {
+            setSettings(s);
+            setSoundEnabled(s.sound);
+        });
+
         // Add navigation listener to refresh progress when coming back
         const unsubscribe = navigation.addListener('focus', () => {
             getLevelProgress().then(setProgress);
+            getSettings().then(s => {
+                setSettings(s);
+                setSoundEnabled(s.sound);
+            });
         });
         return unsubscribe;
     }, [navigation]);
+
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(50)).current;
     const ballBounceAnim = useRef(new Animated.Value(0)).current;
@@ -78,9 +93,31 @@ const MenuScreen = ({ navigation }) => {
         }
     };
 
-    const handleReset = async () => {
-        await clearProgress();
-        setProgress({});
+    const toggleSetting = (key) => {
+        const newSettings = { ...settings, [key]: !settings[key] };
+        setSettings(newSettings);
+        saveSettings(newSettings);
+        if (key === 'sound') setSoundEnabled(newSettings.sound);
+    };
+
+    const handleReset = () => {
+        Alert.alert(
+            "Reset Progress",
+            "Are you sure you want to delete all progress? This cannot be undone.",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Reset",
+                    style: "destructive",
+                    onPress: async () => {
+                        await clearProgress();
+                        setProgress({});
+                        setSettingsVisible(false);
+                        Alert.alert("Reset Complete", "All progress has been cleared.");
+                    }
+                }
+            ]
+        );
     };
 
     return (
@@ -136,8 +173,8 @@ const MenuScreen = ({ navigation }) => {
                         <Text style={styles.levelsButtonText}>Select Level</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-                        <Text style={styles.resetButtonText}>Reset Progress</Text>
+                    <TouchableOpacity style={styles.settingsButton} onPress={() => setSettingsVisible(true)}>
+                        <Text style={styles.settingsButtonText}>⚙ Settings</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -154,6 +191,54 @@ const MenuScreen = ({ navigation }) => {
                     </View>
                 </View>
             </Animated.View>
+
+            {/* Settings Modal */}
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={settingsVisible}
+                onRequestClose={() => setSettingsVisible(false)}
+            >
+                <View style={styles.modalCentered}>
+                    <View style={styles.modalView}>
+                        <Text style={styles.modalTitle}>Settings</Text>
+
+                        {/* Sound Toggle */}
+                        <View style={styles.settingRow}>
+                            <Text style={styles.settingText}>Sound Effects</Text>
+                            <Switch
+                                trackColor={{ false: "#767577", true: COLORS.ui.primary }}
+                                thumbColor={settings.sound ? "#f4f3f4" : "#f4f3f4"}
+                                ios_backgroundColor="#3e3e3e"
+                                onValueChange={() => toggleSetting('sound')}
+                                value={settings.sound}
+                            />
+                        </View>
+
+                        {/* Haptics Toggle */}
+                        <View style={styles.settingRow}>
+                            <Text style={styles.settingText}>Haptic Feedback</Text>
+                            <Switch
+                                trackColor={{ false: "#767577", true: COLORS.ui.primary }}
+                                thumbColor={settings.haptics ? "#f4f3f4" : "#f4f3f4"}
+                                ios_backgroundColor="#3e3e3e"
+                                onValueChange={() => toggleSetting('haptics')}
+                                value={settings.haptics}
+                            />
+                        </View>
+
+                        {/* Reset Progress */}
+                        <TouchableOpacity style={styles.modalResetBtn} onPress={handleReset}>
+                            <Text style={styles.modalResetTxt}>Reset All Progress</Text>
+                        </TouchableOpacity>
+
+                        {/* Close */}
+                        <TouchableOpacity style={styles.closeBtn} onPress={() => setSettingsVisible(false)}>
+                            <Text style={styles.closeBtnTxt}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -290,25 +375,28 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.2)',
         marginBottom: 10,
+        marginTop: 15,
     },
     levelsButtonText: {
         color: COLORS.ui.text,
         fontSize: 18,
         letterSpacing: 1,
     },
-    resetButton: {
-        backgroundColor: 'rgba(239,68,68,0.1)',
+    settingsButton: {
+        backgroundColor: 'rgba(255,255,255,0.05)',
         paddingVertical: 12,
         borderRadius: 30,
         alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
     },
-    resetButtonText: {
-        color: '#ef4444',
+    settingsButtonText: {
+        color: COLORS.ui.textDim,
         fontSize: 14,
         fontWeight: '600',
     },
     instructions: {
-        marginTop: 50,
+        marginTop: 40,
         width: '100%',
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderRadius: 20,
@@ -334,6 +422,79 @@ const styles = StyleSheet.create({
         fontSize: 14,
         flex: 1,
     },
+    // Modal Styles
+    modalCentered: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.8)',
+    },
+    modalView: {
+        width: '85%',
+        backgroundColor: '#1e1e2e',
+        borderRadius: 20,
+        padding: 25,
+        alignItems: 'center',
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)'
+    },
+    modalTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#fff',
+        marginBottom: 25,
+    },
+    settingRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        marginBottom: 20,
+        paddingBottom: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.1)',
+    },
+    settingText: {
+        fontSize: 18,
+        color: '#fff',
+    },
+    modalResetBtn: {
+        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 10,
+        width: '100%',
+        alignItems: 'center',
+        marginBottom: 15,
+        borderWidth: 1,
+        borderColor: 'rgba(239, 68, 68, 0.5)',
+    },
+    modalResetTxt: {
+        color: '#ef4444',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    closeBtn: {
+        backgroundColor: COLORS.ui.primary,
+        borderRadius: 20,
+        padding: 10,
+        elevation: 2,
+        width: '100%',
+        alignItems: 'center',
+    },
+    closeBtnTxt: {
+        color: "white",
+        fontWeight: "bold",
+        textAlign: "center"
+    }
 });
 
 export default MenuScreen;

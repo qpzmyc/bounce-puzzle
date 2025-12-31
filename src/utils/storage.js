@@ -1,8 +1,28 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LEVEL_PROGRESS_KEY = '@bounce_puzzle_progress';
+const SETTINGS_KEY = '@bounce_puzzle_settings';
 
 // Progress schema: { [levelId]: { stars: number, completed: boolean } }
+
+export const getSettings = async () => {
+    try {
+        const jsonValue = await AsyncStorage.getItem(SETTINGS_KEY);
+        // Default: { sound: true, haptics: true }
+        return jsonValue != null ? JSON.parse(jsonValue) : { sound: true, haptics: true };
+    } catch (e) {
+        console.error("Failed to load settings", e);
+        return { sound: true, haptics: true };
+    }
+};
+
+export const saveSettings = async (settings) => {
+    try {
+        await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    } catch (e) {
+        console.error("Failed to save settings", e);
+    }
+};
 
 export const getLevelProgress = async () => {
     try {

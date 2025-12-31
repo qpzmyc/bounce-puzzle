@@ -14,8 +14,10 @@ import BallTrail from '../components/BallTrail';
 import Physics from '../systems/Physics';
 import { COLORS, PHYSICS, GAME, PLATFORM_TYPES } from '../utils/constants';
 import levels from '../levels';
-import { saveLevelProgress, getLevelProgress } from '../utils/storage';
+import { saveLevelProgress, getLevelProgress, getSettings } from '../utils/storage';
 import { getTotalStars, getNextLevelOrRedirect } from '../utils/gameLogic';
+import * as Haptics from 'expo-haptics';
+import { loadSounds, playSound, unloadSounds, setSoundEnabled } from '../utils/audio';
 
 const { width: SW, height: SH } = Dimensions.get('window');
 
@@ -129,6 +131,15 @@ const GameScreen = ({ route, navigation }) => {
     const [lastTrail, setLastTrail] = useState([]);  // Store trail from last attempt
     const [liveTrail, setLiveTrail] = useState([]);  // Trail during current attempt
     const [draggingPlatform, setDraggingPlatform] = useState(null);  // { type, gameX, gameY } for ghost preview
+    const [settings, setSettings] = useState({ haptics: true, sound: true });
+
+    useEffect(() => {
+        getSettings().then(s => {
+            setSettings(s);
+            setSoundEnabled(s.sound);
+        });
+    }, []);
+
     const gameEngineRef = useRef(null);
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -260,6 +271,8 @@ const GameScreen = ({ route, navigation }) => {
                             if (type === 'sticky') {
                                 // STICKY: No bounce (Y=0), but apply standard rolling (Keep X)
                                 Matter.Body.setVelocity(ball, { x: ball.velocity.x, y: 0 });
+                                if (settings.haptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                                playSound('sticky');
                             } else if (type === 'super') {
                                 // DIRECTIONAL SUPER JUMP
                                 // 1. Calculate Normal based on platform angle
@@ -285,10 +298,16 @@ const GameScreen = ({ route, navigation }) => {
                                         x: (rx / mag) * speed,
                                         y: (ry / mag) * speed
                                     });
+                                    if (settings.haptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                                    playSound('super');
                                 }
                             } else if (type === 'normal') {
-                                // Standard Bounce (velocity reflection is handled by physics, but we can ensure minimum)
-                                // Matter.Body.setVelocity(ball, { x: ball.velocity.x, y: -Math.abs(ball.velocity.y) * 0.9 });
+                                // Standard Bounce
+                                // Check if bounce is significant (>~5px height -> ~2.0 velocity)
+                                if (ball.velocity.y > 2.0) {
+                                    if (settings.haptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                    playSound('normal');
+                                }
                             }
                         }
                     }
@@ -299,6 +318,12 @@ const GameScreen = ({ route, navigation }) => {
     };
 
     useEffect(() => { setPlacedPlatforms([]); setGameState('setup'); setStars(0); setLastTrail([]); setLiveTrail([]); }, [levelId]);
+
+    // Initialize Audio
+    useEffect(() => {
+        loadSounds();
+        return () => unloadSounds();
+    }, []);
 
     useEffect(() => {
         const e = buildEntities(false);
@@ -312,6 +337,7 @@ const GameScreen = ({ route, navigation }) => {
                 const s = calculateStars();
                 setStars(s);
                 saveLevelProgress(levelId, s);
+                playSound('level_complete');
             }
             Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
         } else fadeAnim.setValue(0);
@@ -709,12 +735,7 @@ const GameScreen = ({ route, navigation }) => {
                 </View>
             </View>
 
-            {/* 3. Footer (Absolute Bottom) */}
-            <View style={[styles.footer, { position: 'absolute', bottom: 0, left: 0, right: 0 }]}>
-                <TouchableOpacity style={styles.clearBtn} onPress={handleClearPlatforms}>
-                    <Text style={styles.clearTxt}>Clear All Platforms</Text>
-                </TouchableOpacity>
-            </View>
+
         </SafeAreaView>
     );
 };

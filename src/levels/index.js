@@ -189,7 +189,7 @@ const levels = [
             { x: 30, y: 260, width: 60, height: 10 },
             { x: 245, y: 260, width: 270, height: 10 },
         ],
-        platforms: { normal: 6, sticky: 2, super: 0 },
+        platforms: { normal: 5, sticky: 2, super: 0 },
         fans: [
             { x: 10, y: 450, width: 40, height: 40, direction: 'up' },
             { x: 57, y: 450, width: 40, height: 40, direction: 'up' },
@@ -241,10 +241,10 @@ const levels = [
         balls: [{ x: 50, y: 450 }],
         goal: { x: 120, y: 200, width: 40, height: 40 },
         walls: [
-            { x: 130, y: 250, width: 240, height: 10 },
-            { x: 290, y: 10, width: 120, height: 10 },
-            { x: 110, y: 210, width: 10, height: 70 },
-            { x: 170, y: 210, width: 10, height: 70 },
+            { x: 130, y: 250, width: 250, height: 10 },
+            { x: 285, y: 10, width: 130, height: 10 },
+            { x: 110, y: 215, width: 10, height: 70 },
+            { x: 170, y: 215, width: 10, height: 70 },
         ],
         platforms: { normal: 1, sticky: 0, super: 2 },
         fans: [
@@ -488,8 +488,8 @@ const levels = [
         goal: { x: 160, y: 310, width: 30, height: 30 },
         walls: [
             { x: 175, y: 250, width: 80, height: 10 },
-            { x: 80, y: 250, width: 30, height: 10 },
-            { x: 270, y: 250, width: 30, height: 10 },
+            { x: 70, y: 250, width: 50, height: 10 },
+            { x: 275, y: 250, width: 40, height: 10 },
             { x: 175, y: 350, width: 70, height: 10 },
         ],
         platforms: { normal: 1, sticky: 0, super: 3 },
@@ -540,13 +540,14 @@ const levels = [
         balls: [{ x: 175, y: 50 }, { x: 250, y: 470 }],
         goal: { x: 315, y: 490, width: 20, height: 20 },
         walls: [
-            { x: 310, y: 470, width: 10, height: 50 },
+            { x: 310, y: 450, width: 10, height: 90 },
             { x: 265, y: 85, width: 10, height: 170 },
             { x: 307.5, y: 0, width: 85, height: 10 },
             { x: 157.5, y: 170, width: 225, height: 10 },
             { x: 100, y: 305, width: 200, height: 10 },
             { x: 160, y: 450, width: 220, height: 10 },
             { x: 160, y: 490, width: 220, height: 10 },
+            { x: 190, y: 190, width: 10, height: 50 },
         ],
         platforms: { normal: 4, sticky: 2, super: 2 },
         fans: [
@@ -556,10 +557,14 @@ const levels = [
             { x: 270, y: 480, width: 40, height: 40, direction: 'up' },
         ],
         spikes: [
-            { x: 300, y: 430, width: 20, height: 10, direction: 'up' },
+            { x: 300, y: 390, width: 20, height: 10, direction: 'up' },
             { x: 245, y: 0, width: 10, height: 165, direction: 'left' },
             { x: 10, y: 200, width: 10, height: 100, direction: 'right' },
             { x: 50, y: 430, width: 220, height: 10, direction: 'up' },
+            { x: 170, y: 175, width: 10, height: 40, direction: 'left' },
+            { x: 10, y: 0, width: 10, height: 120, direction: 'right' },
+            { x: 10, y: 310, width: 10, height: 100, direction: 'right' },
+            { x: 270, y: 10, width: 65, height: 10, direction: 'down' },
         ],
         noPlaceZones: [
             { x: 25, y: 150, width: 40, height: 300 },
