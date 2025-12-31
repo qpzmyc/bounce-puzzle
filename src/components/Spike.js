@@ -87,7 +87,7 @@ const Spike = ({ position, size, direction = 'up' }) => {
 const styles = StyleSheet.create({
     spikeContainer: {
         position: 'absolute',
-        // debug: borderWidth: 1, borderColor: 'lime'
+        zIndex: 1,
     },
 });
 

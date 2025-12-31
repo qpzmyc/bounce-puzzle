@@ -150,6 +150,28 @@ const GameScreen = ({ route, navigation }) => {
         engine.world.gravity = PHYSICS.gravity;
         let ents = { physics: { engine, world: engine.world } };
 
+        // GLOBAL INVISIBLE SAFETY WALLS
+        const wallThick = 50;
+        const wallH = GAME.height * 2;
+
+        // Left (Move inward to ensure no clipping) -> Edge at x=5
+        const leftWallBody = Matter.Bodies.rectangle(-20, GAME.height / 2, wallThick, wallH, { isStatic: true, restitution: 1.0, friction: 0 });
+        Matter.World.add(engine.world, leftWallBody);
+        ents['wall-left-invis'] = {
+            body: leftWallBody,
+            size: { width: wallThick, height: wallH },
+            renderer: Wall
+        };
+
+        // Right (Move inward) -> Edge at width-5
+        const rightWallBody = Matter.Bodies.rectangle(GAME.width + 20, GAME.height / 2, wallThick, wallH, { isStatic: true, restitution: 1.0, friction: 0 });
+        Matter.World.add(engine.world, rightWallBody);
+        ents['wall-right-invis'] = {
+            body: rightWallBody,
+            size: { width: wallThick, height: wallH },
+            renderer: Wall
+        };
+
         level.walls.forEach((w, i) => {
             const b = Matter.Bodies.rectangle(w.x, w.y, w.width, w.height, { isStatic: true, restitution: 0.3 });
             Matter.World.add(engine.world, b);
@@ -179,29 +201,7 @@ const GameScreen = ({ route, navigation }) => {
             renderer: Spike
         };
 
-        // GLOBAL INVISIBLE SAFETY WALLS
-        const wallThick = 50;
-        const wallH = GAME.height * 2;
 
-        // Left (Move inward to ensure no clipping) -> Edge at x=5
-        const leftWallBody = Matter.Bodies.rectangle(-20, GAME.height / 2, wallThick, wallH, { isStatic: true, restitution: 1.0, friction: 0 });
-        Matter.World.add(engine.world, leftWallBody);
-        ents['wall-left-invis'] = {
-            body: leftWallBody,
-            size: { width: wallThick, height: wallH },
-            renderer: Wall,
-            color: 'transparent'
-        };
-
-        // Right (Move inward) -> Edge at width-5
-        const rightWallBody = Matter.Bodies.rectangle(GAME.width + 20, GAME.height / 2, wallThick, wallH, { isStatic: true, restitution: 1.0, friction: 0 });
-        Matter.World.add(engine.world, rightWallBody);
-        ents['wall-right-invis'] = {
-            body: rightWallBody,
-            size: { width: wallThick, height: wallH },
-            renderer: Wall,
-            color: 'transparent'
-        };
 
         placedPlatforms.forEach((p, i) => {
             // NOTE: We rely on manual collision logic now, so restitution here is backup
@@ -406,36 +406,41 @@ const GameScreen = ({ route, navigation }) => {
 
     const addPlatform = (type) => {
         if (getRemainingByType(type) > 0 && gameState === 'setup') {
+            // Start near top middle
             let x = GAME.width / 2;
-            let y = Math.min(180 + (placedPlatforms.length * 40), GAME.height - 100);
+            let y = 100;
+            const stepY = 6;
+            const shiftX = 80;
 
-            // Shift 6px down-right until valid placement found
-            const maxAttempts = 50; // Prevent infinite loop
+            const maxAttempts = 300; // Prevent infinite loop, plenty of space coverage
+            let found = false;
+
             for (let attempt = 0; attempt < maxAttempts; attempt++) {
                 // Check if valid placement (not in no-place zone)
                 const isValid = isPlacementValid(x, y, 0, level.noPlaceZones);
-
-                // Check for exact duplicate position with existing platforms
+                // Check for duplicate
                 const isDuplicate = placedPlatforms.some(p => p.x === x && p.y === y);
 
                 if (isValid && !isDuplicate) {
-                    break; // Found a valid spot
+                    found = true;
+                    setPlacedPlatforms([...placedPlatforms, { x, y, angle: 0, type }]);
+                    break;
                 }
 
-                // Shift 6px down and right
-                x += 6;
-                y += 6;
+                // Step Down
+                y += stepY;
 
-                // Wrap around if we go too far
-                if (x > GAME.width - PHYSICS.platformWidth / 2) {
-                    x = PHYSICS.platformWidth / 2;
-                }
-                if (y > GAME.height - PHYSICS.platformHeight / 2) {
-                    y = PHYSICS.platformHeight / 2;
+                // Reset to top and shift right if reached bottom
+                if (y > GAME.height - 50) {
+                    y = 100; // Reset to top
+                    x += shiftX; // Shift right
+
+                    // Wrap X if too far right
+                    if (x > GAME.width - PHYSICS.platformWidth / 2) {
+                        x = PHYSICS.platformWidth / 2 + 20; // Reset to left
+                    }
                 }
             }
-
-            setPlacedPlatforms([...placedPlatforms, { x, y, angle: 0, type }]);
         }
     };
 
@@ -478,7 +483,9 @@ const GameScreen = ({ route, navigation }) => {
         const offsetGameY = Math.max(PHYSICS.platformHeight / 2, gamePos.gameY + bankDragOffsetY);
 
         // Reset drag ref to touch position (with offset) to start fresh
-        dragPosRef.current = { x: gamePos.gameX, y: offsetGameY };
+        // Also track maxY to know if we ever entered the game area
+        // AND track moveCount to detect "tap" vs "drag" (hysteresis)
+        dragPosRef.current = { x: gamePos.gameX, y: offsetGameY, maxY: offsetGameY, moveCount: 0 };
 
         // Bank drag always starts with 0 rotation
         const isValid = gamePos.isInBounds && isPlacementValid(gamePos.gameX, offsetGameY, 0, level.noPlaceZones);
@@ -493,15 +500,10 @@ const GameScreen = ({ route, navigation }) => {
         // Add Y offset so platform appears ABOVE finger for better visibility
         const bankDragOffsetY = -50;
         let targetX = targetPos.gameX;
-        let targetY = Math.max(PHYSICS.platformHeight / 2, targetPos.gameY + bankDragOffsetY);
+        let targetY = targetPos.gameY + bankDragOffsetY;
 
-        // Bound to game area (matching platform movement)
-        const W = PHYSICS.platformWidth;
-        const H = PHYSICS.platformHeight;
-        targetX = Math.max(W / 2, Math.min(GAME.width - W / 2, targetX));
-        targetY = Math.max(H / 2, Math.min(GAME.height - H / 2, targetY));
-
-        // Snap TARGET to 2px grid BEFORE LERP (matching platform movement)
+        // NO CLAMPING during bank drag - let it go anywhere
+        // but snap TARGET to 2px grid for smooth movement visual
         const snapTargetX = Math.round(targetX / 2) * 2;
         const snapTargetY = Math.round(targetY / 2) * 2;
 
@@ -516,163 +518,199 @@ const GameScreen = ({ route, navigation }) => {
         const newX = currentX + dx * lerp;
         const newY = currentY + dy * lerp;
 
-        dragPosRef.current = { x: newX, y: newY };
+        // Update Ref with new pos and max experienced Y
+        // Increment moveCount
+        dragPosRef.current = {
+            x: newX,
+            y: newY,
+            maxY: Math.max(dragPosRef.current.maxY || -Infinity, newY),
+            moveCount: (dragPosRef.current.moveCount || 0) + 1
+        };
 
-        const isValid = targetPos.isInBounds && isPlacementValid(newX, newY, 0, level.noPlaceZones);
-        setDraggingPlatform({ type, gameX: newX, gameY: newY, isValid });
+        // Check if we are inside the game bounds (GameY > 0)
+        // Actually, let's use a small buffer. Bank is 'above', so y < 0.
+        // If Y > 0, we are in the game.
+        const inBounds = newY > 0 && newY < GAME.height && newX > 0 && newX < GAME.width;
+
+        setDraggingPlatform({
+            type,
+            gameX: newX,
+            gameY: newY,
+            isValid: inBounds && isPlacementValid(newX, newY, 0, level.noPlaceZones)
+        });
     }, [level]);
 
     const handleDragRelease = React.useCallback((type, evt) => {
-        const touchX = evt.nativeEvent.pageX;
-        const touchY = evt.nativeEvent.pageY;
-        // Check final release at FINGER position (or Ghost position?)
-        // Usually drop at Ghost position is expected if damping is visual
-        // But for gameplay fairness, we should probably look at where the ghost IS.
-        // Let's use the Ghost's last position (dragPosRef)
         const gameX = dragPosRef.current.x;
         const gameY = dragPosRef.current.y;
+        const maxY = dragPosRef.current.maxY || -Infinity;
+        const moveCount = dragPosRef.current.moveCount || 0;
 
-        // Re-check bounds for that position
-        const layoutOffset = (SW - GAME.width * scale) / 2; // Helper to check raw bounds? 
-        // Actually screenToGameCoords checks isInBounds based on TOUCH.
-        // Let's verify if gameX/Y are inside GAME.width/height
+        // Check bounds again at release
         const inBounds = gameX > 0 && gameX < GAME.width && gameY > 0 && gameY < GAME.height;
+        const enteredGameArea = maxY > 0; // Threshold 0 implies entered game area
 
         if (inBounds) {
-            // Snapping
+            // RELEASED INSIDE GAME LAYOUT -> Normal Place
             const snappedX = Math.round(gameX / 2) * 2;
             const snappedY = Math.round(gameY / 2) * 2;
 
-            // Check zones validation again
             if (isPlacementValid(snappedX, snappedY, 0, level.noPlaceZones)) {
                 addPlatformAt(type, snappedX, snappedY);
             }
+        } else {
+            // RELEASED OUTSIDE
+
+            // If never entered game area OR moved very little (tap), Auto-Place
+            if (!enteredGameArea || moveCount < 10) {
+                // TAP TO PLACE
+                addPlatform(type);
+            }
+            // ELSE: We entered game area OR moved a lot and brought it back => CANCEL (Do nothing)
         }
+
         setDraggingPlatform(null);
-    }, [placedPlatforms, gameState, level]); // Ensure this is up to date
+    }, [placedPlatforms, gameState, level]);
+
 
 
 
     return (
         <SafeAreaView style={styles.safe}>
-            {/* Header */}
-            <View style={styles.header}>
-                <View style={styles.headerTop}>
-                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.navigate('Menu')}>
-                        <Text style={styles.icon}>←</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.title}>{level.name}</Text>
-                    <Stars count={calculateStars()} size={18} />
+            {/* 1. Game Area (Rendered First = Bottom Layer) */}
+            <View style={{ flex: 1, justifyContent: 'center', marginTop: 80, marginBottom: 60 }}>
+                <View
+                    ref={gameAreaRef}
+                    style={[styles.gameWrap, { width: GAME.width * scale, height: GAME.height * scale }]}
+                    onLayout={(event) => {
+                        // Measure actual position on screen
+                        event.target.measureInWindow((x, y, width, height) => {
+                            measuredGameAreaLayout = { x, y, width, height };
+                        });
+                    }}
+                >
+                    <View style={{ width: GAME.width, height: GAME.height, transform: [{ scale }], transformOrigin: 'top left', backgroundColor: '#0a0a18' }}>
+                        {entities && <GameEngine ref={gameEngineRef} style={{ width: GAME.width, height: GAME.height }} systems={[Physics]} entities={entities} running={gameState === 'playing'} onEvent={handleEvent} />}
 
-                    {/* Retry Button (Keep platforms) */}
-                    <TouchableOpacity style={styles.retryHeaderBtn} onPress={handleRetry}>
-                        <Text style={styles.retryIcon}>↺</Text>
-                    </TouchableOpacity>
+                        {/* Show trail: last attempt during setup, or live trail during playing */}
+                        {gameState === 'setup' && lastTrail.length > 0 && <BallTrail points={lastTrail} />}
+                        {gameState === 'playing' && liveTrail.length > 0 && <BallTrail points={liveTrail} />}
 
+                        {gameState === 'setup' && (level.balls || []).map((b, i) => <StartArea key={i} position={b} />)}
+
+                        {gameState === 'setup' && placedPlatforms.map((p, i) => (
+                            <DraggablePlatform key={i} p={p} i={i} scale={scale} onUpdate={updatePlatform} onRemove={removePlatform} zones={level.noPlaceZones} />
+                        ))}
+
+                        {/* Ghost preview while dragging from bank */}
+                        {draggingPlatform && draggingPlatform.gameX != null && draggingPlatform.gameY != null && (
+                            <View
+                                style={{
+                                    position: 'absolute',
+                                    left: draggingPlatform.gameX - PHYSICS.platformWidth / 2,
+                                    top: draggingPlatform.gameY - PHYSICS.platformHeight / 2,
+                                    width: PHYSICS.platformWidth,
+                                    height: PHYSICS.platformHeight,
+                                    backgroundColor: draggingPlatform.isValid ? (PLATFORM_TYPES[draggingPlatform.type]?.color || COLORS.platform) : 'rgba(239, 68, 68, 0.5)',
+                                    opacity: 0.7,
+                                    borderRadius: 4,
+                                    borderWidth: 2,
+                                    borderColor: draggingPlatform.isValid ? '#fff' : 'rgba(239, 68, 68, 1)',
+                                    borderStyle: draggingPlatform.isValid ? 'dashed' : 'solid',
+                                }}
+                            />
+                        )}
+                        {/* Rendering No-Place Zones */}
+                        {(level.noPlaceZones || []).map((z, i) => (
+                            <View
+                                key={`npz-${i}`}
+                                style={{
+                                    position: 'absolute',
+                                    left: z.x - z.width / 2,
+                                    top: z.y - z.height / 2,
+                                    width: z.width,
+                                    height: z.height,
+                                    backgroundColor: 'rgba(239, 68, 68, 0.2)', // Translucent Red
+                                    borderWidth: 1,
+                                    borderColor: 'rgba(239, 68, 68, 0.5)',
+                                    borderStyle: 'dashed',
+                                }}
+                            />
+                        ))}
+                    </View>
+
+                    {/* Overlay */}
+                    {(gameState === 'win' || gameState === 'lose') && (
+                        <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
+                            <View style={[styles.overlayBox, gameState === 'win' ? styles.winBox : styles.loseBox]}>
+                                {gameState === 'win' ? <><Text style={styles.overlayTxt}>🎉 Complete!</Text><Stars count={stars} size={26} /></> : <Text style={styles.overlayTxt}>💥 Try Again</Text>}
+                                <View style={{ flexDirection: 'row', marginTop: 12 }}>
+                                    {gameState === 'win' && <TouchableOpacity style={styles.nextBtn} onPress={handleNext}><Text style={styles.btnTxt}>Next →</Text></TouchableOpacity>}
+                                    <TouchableOpacity style={styles.retryBtn} onPress={handleRetry}><Text style={styles.btnTxt}>Retry</Text></TouchableOpacity>
+                                </View>
+                            </View>
+                        </Animated.View>
+                    )}
+                </View>
+            </View>
+
+            {/* 2. Header (Absolute Top) */}
+            <View style={[styles.header, { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-between' }]}>
+                {/* Left Block: Back, Title, Stars */}
+                <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                        <TouchableOpacity style={[styles.backBtn, { marginTop: 20 }]} onPress={() => navigation.navigate('Menu')}>
+                            <Text style={styles.icon}>←</Text>
+                        </TouchableOpacity>
+                        <Text style={[styles.title, { marginTop: -10 }]}>{level.id}. {level.name}</Text>
+                    </View>
+                    <View style={{ paddingLeft: 45, marginTop: -15 }}>
+                        <Stars count={calculateStars()} size={18} />
+                    </View>
+                </View>
+
+                {/* Right Block: Retry/Bank Column + Drop */}
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginRight: 35 }}>
+                    {/* Retry & Bank Column */}
+                    {/* Fixed width to ensure Retry button stays in place regardless of bank size */}
+                    <View style={{ alignItems: 'center', marginRight: 8, width: 32 }}>
+                        {/* Retry Button */}
+                        <TouchableOpacity style={[styles.retryHeaderBtn, { marginRight: 0 }]} onPress={handleRetry}>
+                            <Text style={styles.retryIcon}>↺</Text>
+                        </TouchableOpacity>
+
+                        {/* Bank - Absolute positioning to center on button without affecting layout */}
+                        {/* 200px width centered: 100 - 16(half btn) = 84 offset */}
+                        <View style={[styles.bank, { position: 'absolute', top: 38, width: 200, left: -49 }]}>
+                            {Object.keys(PLATFORM_TYPES).map(k => {
+                                const rem = getRemainingByType(k);
+                                if ((level.platforms[k] || 0) === 0) return null;
+                                return (
+                                    <DraggableBankItem
+                                        key={k}
+                                        type={k}
+                                        remaining={rem}
+                                        disabled={rem === 0 || gameState !== 'setup'}
+                                        isDragging={draggingPlatform?.type === k}
+                                        onDragStart={handleDragStart}
+                                        onDragMove={handleDragMove}
+                                        onDragRelease={handleDragRelease}
+                                        onDrop={() => addPlatform(k)}
+                                    />
+                                );
+                            })}
+                        </View>
+                    </View>
+
+                    {/* Drop Button */}
                     <TouchableOpacity style={[styles.dropBtn, gameState !== 'setup' && { opacity: 0.4 }]} onPress={handleDrop}>
                         <Text style={styles.dropTxt}>DROP!</Text>
                     </TouchableOpacity>
                 </View>
-
-                {/* Bank - Tap or drag platforms into game area */}
-                <View style={styles.bank}>
-                    {Object.keys(PLATFORM_TYPES).map(k => {
-                        const rem = getRemainingByType(k);
-                        if ((level.platforms[k] || 0) === 0) return null;
-                        return (
-                            <DraggableBankItem
-                                key={k}
-                                type={k}
-                                remaining={rem}
-                                disabled={rem === 0 || gameState !== 'setup'}
-                                isDragging={draggingPlatform?.type === k}
-                                onDragStart={handleDragStart}
-                                onDragMove={handleDragMove}
-                                onDragRelease={handleDragRelease}
-                                onDrop={() => addPlatform(k)}
-                            />
-                        );
-                    })}
-                </View>
             </View>
 
-            {/* Game Area */}
-            <View
-                ref={gameAreaRef}
-                style={[styles.gameWrap, { width: GAME.width * scale, height: GAME.height * scale }]}
-                onLayout={(event) => {
-                    // Measure actual position on screen
-                    event.target.measureInWindow((x, y, width, height) => {
-                        measuredGameAreaLayout = { x, y, width, height };
-                    });
-                }}
-            >
-                <View style={{ width: GAME.width, height: GAME.height, transform: [{ scale }], transformOrigin: 'top left', backgroundColor: '#0a0a18' }}>
-                    {/* Show trail: last attempt during setup, or live trail during playing */}
-                    {gameState === 'setup' && lastTrail.length > 0 && <BallTrail points={lastTrail} />}
-                    {gameState === 'playing' && liveTrail.length > 0 && <BallTrail points={liveTrail} />}
-
-                    {entities && <GameEngine ref={gameEngineRef} style={{ width: GAME.width, height: GAME.height }} systems={[Physics]} entities={entities} running={gameState === 'playing'} onEvent={handleEvent} />}
-
-                    {gameState === 'setup' && (level.balls || []).map((b, i) => <StartArea key={i} position={b} />)}
-
-                    {gameState === 'setup' && placedPlatforms.map((p, i) => (
-                        <DraggablePlatform key={i} p={p} i={i} scale={scale} onUpdate={updatePlatform} onRemove={removePlatform} zones={level.noPlaceZones} />
-                    ))}
-
-                    {/* Ghost preview while dragging from bank */}
-                    {draggingPlatform && draggingPlatform.gameX != null && draggingPlatform.gameY != null && (
-                        <View
-                            style={{
-                                position: 'absolute',
-                                left: draggingPlatform.gameX - PHYSICS.platformWidth / 2,
-                                top: draggingPlatform.gameY - PHYSICS.platformHeight / 2,
-                                width: PHYSICS.platformWidth,
-                                height: PHYSICS.platformHeight,
-                                backgroundColor: draggingPlatform.isValid ? (PLATFORM_TYPES[draggingPlatform.type]?.color || COLORS.platform) : 'rgba(239, 68, 68, 0.5)',
-                                opacity: 0.7,
-                                borderRadius: 4,
-                                borderWidth: 2,
-                                borderColor: draggingPlatform.isValid ? '#fff' : 'rgba(239, 68, 68, 1)',
-                                borderStyle: draggingPlatform.isValid ? 'dashed' : 'solid',
-                            }}
-                        />
-                    )}
-                    {/* Rendering No-Place Zones */}
-                    {(level.noPlaceZones || []).map((z, i) => (
-                        <View
-                            key={`npz-${i}`}
-                            style={{
-                                position: 'absolute',
-                                left: z.x - z.width / 2,
-                                top: z.y - z.height / 2,
-                                width: z.width,
-                                height: z.height,
-                                backgroundColor: 'rgba(239, 68, 68, 0.2)', // Translucent Red
-                                borderWidth: 1,
-                                borderColor: 'rgba(239, 68, 68, 0.5)',
-                                borderStyle: 'dashed',
-                            }}
-                        />
-                    ))}
-                </View>
-
-                {/* Overlay */}
-                {(gameState === 'win' || gameState === 'lose') && (
-                    <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
-                        <View style={[styles.overlayBox, gameState === 'win' ? styles.winBox : styles.loseBox]}>
-                            {gameState === 'win' ? <><Text style={styles.overlayTxt}>🎉 Complete!</Text><Stars count={stars} size={26} /></> : <Text style={styles.overlayTxt}>💥 Try Again</Text>}
-                            <View style={{ flexDirection: 'row', marginTop: 12 }}>
-                                {gameState === 'win' && <TouchableOpacity style={styles.nextBtn} onPress={handleNext}><Text style={styles.btnTxt}>Next →</Text></TouchableOpacity>}
-                                <TouchableOpacity style={styles.retryBtn} onPress={handleRetry}><Text style={styles.btnTxt}>Retry</Text></TouchableOpacity>
-                            </View>
-                        </View>
-                    </Animated.View>
-                )}
-            </View>
-
-            {/* Bottom: Clear All */}
-            <View style={styles.footer}>
+            {/* 3. Footer (Absolute Bottom) */}
+            <View style={[styles.footer, { position: 'absolute', bottom: 0, left: 0, right: 0 }]}>
                 <TouchableOpacity style={styles.clearBtn} onPress={handleClearPlatforms}>
                     <Text style={styles.clearTxt}>Clear All Platforms</Text>
                 </TouchableOpacity>
@@ -918,6 +956,8 @@ const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones }) => {
                 widgetPan.setValue({ x: pRef.current.startX, y: pRef.current.startY });
                 rotationAnim.setValue(pRef.current.startPlatformAngle);
                 angleRef.current = pRef.current.startPlatformAngle;
+                // Force reset validity visual (since props won't change if reverted to original)
+                validityAnim.setValue(1);
             } else {
                 // Commit the final position and final angle
                 onUpdate(i, { x: Math.round(x), y: Math.round(y), angle: finalAngle });
@@ -1056,22 +1096,29 @@ const DraggableBankItem = React.memo(({ type, remaining, disabled, isDragging, o
 
 const styles = StyleSheet.create({
     safe: { flex: 1, backgroundColor: COLORS.background },
-    header: { padding: 8, backgroundColor: 'rgba(0,0,0,0.2)' },
+    header: { padding: 8, paddingTop: 23, backgroundColor: 'rgba(0,0,0,0.2)', zIndex: 1000, elevation: 50 },
     headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
     backBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
     icon: { color: '#fff', fontSize: 18 },
     title: { color: '#fff', fontSize: 14, fontWeight: '600', marginLeft: 8, flex: 1 },
     retryHeaderBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 8 },
     retryIcon: { color: '#fff', fontSize: 20 },
-    dropBtn: { backgroundColor: '#22c55e', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 8 },
+    dropBtn: { backgroundColor: '#7F00FF', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 8 },
     dropTxt: { color: '#fff', fontWeight: 'bold' },
-    bank: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
+    bank: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        borderRadius: 12,
+        padding: 4,
+    },
     bankItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', paddingVertical: 4, paddingHorizontal: 8, borderRadius: 6, margin: 2 },
     bankPlat: { width: 24, height: 8, borderRadius: 4, alignItems: 'center', justifyContent: 'center', marginRight: 4 },
     bankIcon: { fontSize: 6, color: '#fff' },
     bankCnt: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
-    gameWrap: { alignSelf: 'center', backgroundColor: '#0f0f1b', borderRadius: 8, overflow: 'hidden', marginVertical: 4, borderWidth: 1, borderColor: '#333' },
-    footer: { Padding: 10, alignItems: 'center', justifyContent: 'center', height: 50 },
+    gameWrap: { alignSelf: 'center', backgroundColor: '#0f0f1b', borderRadius: 8, marginVertical: 4, borderWidth: 1, borderColor: '#333', overflow: 'hidden' },
+    footer: { Padding: 10, alignItems: 'center', justifyContent: 'center', height: 50, zIndex: 1000, elevation: 50 },
     clearBtn: { backgroundColor: 'rgba(239,68,68,0.15)', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20 },
     clearTxt: { color: '#ef4444', fontSize: 14, fontWeight: '600' },
     dragPlat: { position: 'absolute', flexDirection: 'row', alignItems: 'center' },

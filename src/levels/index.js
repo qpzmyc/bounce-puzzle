@@ -17,63 +17,63 @@ const levels = [
         spikes: [],
         noPlaceZones: [],
     },
+    // 2. INTRO: Spikes
+    // Spike directly in path. Bounce around it.
 
-    // 2. INTRO: Fans
+    {
+        id: 2,
+        name: "Watch Your Step",
+        description: "Spikes destroy the ball.",
+        balls: [{ x: 170, y: 50 }],
+        goal: { x: 150, y: 400, width: 40, height: 40 },  // Centered (GAME.width/2 - width/2 = 170 - 25 = 145)
+        walls: [
+            { x: 170, y: 220, width: 100, height: 10 }, // Right Wall
+        ],
+        platforms: { normal: 4, sticky: 0, super: 0 },
+        fans: [],
+        spikes: [
+            { x: 120, y: 200, width: 100, height: 10, direction: 'up' } // Middle spike
+        ],
+        noPlaceZones: [],
+    },
+    // 3. INTRO: Fans
     // Fan blows right. Ball drops left. Goal is far right.
     // You need to bounce it up slightly so the fan carries it.
     {
-        id: 2,
+        id: 3,
         name: "Windy Day",
         description: "Fans push the ball. Use them!",
-        balls: [{ x: 60, y: 50 }],
+        balls: [{ x: 60, y: 60 }],
         goal: { x: 270, y: 300, width: 40, height: 40 },
         walls: [
             { x: 345, y: 240, width: 15, height: 480 },
         ],
         platforms: { normal: 3, sticky: 0, super: 0 },
         fans: [
-            { x: 10, y: 150, width: 50, height: 100, direction: 'right' }  // Moved right to be fully in bounds
+            { x: 10, y: 70, width: 50, height: 100, direction: 'right' }  // Moved right to be fully in bounds
         ],
         spikes: [],
-        noPlaceZones: [{ x: 85, y: 260, width: 170, height: 510 }],
+        noPlaceZones: [{ x: 90, y: 255, width: 170, height: 510 }],
     },
-
-    // 3. INTRO: Spikes
-    // Spike directly in path. Bounce around it.
-    {
-        id: 3,
-        name: "Watch Your Step",
-        description: "Spikes destroy the ball.",
-        balls: [{ x: 170, y: 50 }],
-        goal: { x: 150, y: 400, width: 40, height: 40 },  // Centered (GAME.width/2 - width/2 = 170 - 25 = 145)
-        walls: [],
-        platforms: { normal: 4, sticky: 0, super: 0 },
-        fans: [],
-        spikes: [
-            { x: 120, y: 200, width: 100, height: 15, direction: 'up' } // Middle spike
-        ],
-        noPlaceZones: [],
-    },
-
-    // 4. INTRO: Dual Balls
-    // Two balls, one goal. Symmetrical.
+    // 4. INTRO: SUPER
     {
         id: 4,
-        name: "Double Trouble",
-        description: "Get BOTH balls into the goal.",
-        balls: [{ x: 80, y: 50 }, { x: 260, y: 50 }],
-        goal: { x: 170, y: 350, width: 40, height: 40 },
-        walls: [],
-        platforms: { normal: 4, sticky: 0, super: 0 },
+        name: "Wall Dive",
+        description: "Go UNDER the wall.",
+        balls: [{ x: 50, y: 200 }],
+        goal: { x: 280, y: 230, width: 40, height: 40 }, // Goal moved Lower (150 -> 180) for easier shot
+        walls: [
+            { x: 175, y: 190, width: 15, height: 380 }, // Wall extended LOWER (height 260->360, y 130->180) to force tight angle
+            { x: 175, y: 0, width: 350, height: 10 },
+        ],
+        platforms: { normal: 2, sticky: 0, super: 2 },
         fans: [],
         spikes: [],
-        noPlaceZones: [
-            { x: 175, y: 110, width: 350, height: 300 },
-
-        ],
+        noPlaceZones: [{ x: 170, y: 190, width: 340, height: 380 }],
     },
 
-    // 5. INTRO: Sticky & Super
+
+    // 5. INTRO: Sticky
     {
         id: 5,
         name: "Physics Lab",
@@ -95,36 +95,24 @@ const levels = [
         name: "Zig Zag",
         description: "Bounce back and forth to descend safely.",
         balls: [{ x: 50, y: 50 }],
-        goal: { x: 280, y: 460, width: 40, height: 40 },
+        goal: { x: 50, y: 460, width: 40, height: 40 },
         walls: [
-            { x: 100, y: 150, width: 200, height: 15 }, // Left Top
-            { x: 240, y: 280, width: 200, height: 15 }, // Right Middle
-            { x: 100, y: 410, width: 200, height: 15 }, // Left Bottom
+            { x: 100, y: 150, width: 200, height: 10 }, // Left Top
+            { x: 240, y: 280, width: 200, height: 10 }, // Right Middle
+            { x: 100, y: 410, width: 200, height: 10 }, // Left Bottom
         ],
-        platforms: { normal: 3, sticky: 2, super: 0 },
+        platforms: { normal: 4, sticky: 2, super: 1 },
         fans: [],
-        spikes: [],
+        spikes: [
+            { x: 0, y: 130, width: 200, height: 10, direction: 'up' },
+            { x: 140, y: 260, width: 200, height: 10, direction: 'up' },
+            { x: 0, y: 390, width: 200, height: 10, direction: 'up' },
+        ],
     },
 
-    // 7. MAIN: Wall Dive (ball must go UNDER the wall)
+    // 7. MAIN: Crosswind
     {
         id: 7,
-        name: "Wall Dive",
-        description: "Go UNDER the wall.",
-        balls: [{ x: 50, y: 200 }],
-        goal: { x: 300, y: 230, width: 40, height: 40 }, // Goal moved Lower (150 -> 180) for easier shot
-        walls: [
-            { x: 175, y: 190, width: 15, height: 380 }, // Wall extended LOWER (height 260->360, y 130->180) to force tight angle
-            { x: 175, y: 0, width: 350, height: 10 },
-        ],
-        platforms: { normal: 0, sticky: 0, super: 4 },
-        fans: [],
-        spikes: [],
-    },
-
-    // 8. MAIN: Crosswind
-    {
-        id: 8,
         name: "Crosswind",
         description: "Fight the wind or fall to spikes.",
         balls: [{ x: 170, y: 50 }],
@@ -149,7 +137,23 @@ const levels = [
             { x: 60, y: 340, width: 100, height: 150 },
         ],
     },
+    // 8. INTRO: Dual Balls
+    // Two balls, one goal. Symmetrical.
+    {
+        id: 8,
+        name: "Double Trouble",
+        description: "Get BOTH balls into the goal.",
+        balls: [{ x: 80, y: 50 }, { x: 260, y: 50 }],
+        goal: { x: 170, y: 350, width: 40, height: 40 },
+        walls: [],
+        platforms: { normal: 4, sticky: 0, super: 0 },
+        fans: [],
+        spikes: [],
+        noPlaceZones: [
+            { x: 175, y: 110, width: 350, height: 300 },
 
+        ],
+    },
     // 9. MAIN: Precision (True Needle Thread)
     {
         id: 9,
@@ -158,15 +162,12 @@ const levels = [
         balls: [{ x: 50, y: 50 }], // Offset, not aligned!
         goal: { x: 50, y: 450, width: 40, height: 40 }, // Moved to LEFT side (170 -> 50)
         walls: [
-            // The constriction
             { x: 80, y: 295, width: 160, height: 10 }, // Left block (Ends at x=160)
             { x: 260, y: 295, width: 160, height: 10 }, // Right block (Starts at x=180)
-            // Gap: x=160 to x=180 (20px)
         ],
         platforms: { normal: 2, sticky: 2, super: 0 },
         fans: [],
         spikes: [
-            // Spikes covering entire mid platform except the gap (x=160-180)
             { x: 0, y: 275, width: 155, height: 10, direction: 'up' },    // Left side spikes (up to gap)
             { x: 185, y: 275, width: 155, height: 10, direction: 'up' },  // Right side spikes (after gap)
         ],
@@ -175,12 +176,12 @@ const levels = [
         ],
     },
 
-    // 10. BOSS: The Mix
+    // 10. BOSS: Upside Down
     {
         id: 10,
         name: "Upside Down Chute",
         description: "Use everything you learned.",
-        balls: [{ x: 50, y: 400 }, { x: 300, y: 400 }],
+        balls: [{ x: 30, y: 400 }, { x: 300, y: 400 }],
         goal: { x: 170, y: 20, width: 40, height: 40 },
         walls: [
             { x: 155, y: 85, width: 10, height: 160 },
@@ -221,9 +222,9 @@ const levels = [
             { x: 160, y: 165, width: 10, height: 80 }, // Divider
             { x: 65, y: 300, width: 110, height: 10 }, // Divider
         ],
-        platforms: { normal: 2, sticky: 2, super: 0 }, // Added 2 extra sticky (1->3)
+        platforms: { normal: 2, sticky: 1, super: 0 }, // Added 2 extra sticky (1->3)
         fans: [
-            { x: 250, y: 200, width: 40, height: 40, direction: 'left' }
+            { x: 230, y: 200, width: 40, height: 40, direction: 'left' }
         ],
         spikes: [
             { x: 10, y: 280, width: 110, height: 10, direction: 'up' }, // Moved decent bit left (center 70 -> 50)
@@ -254,26 +255,26 @@ const levels = [
         noPlaceZones: [],
     },
 
-    // 13. Precision - Reworked
+    // 13. Precision
     {
         id: 13,
         name: "Precision",
         description: "Into the tunnel.",
         balls: [{ x: 300, y: 50 }],
-        goal: { x: 290, y: 275, width: 40, height: 40 },
+        goal: { x: 290, y: 265, width: 40, height: 40 },
         walls: [
-            // Tunnel Structure
             { x: 230, y: 250, width: 220, height: 10 }, // Ceiling
-            { x: 230, y: 330, width: 220, height: 10 }, // Floor (Raised 350->330)
+            { x: 230, y: 320, width: 220, height: 10 }, // Floor (Raised 350->330)
         ],
-        platforms: { normal: 1, sticky: 3, super: 0 },
+        platforms: { normal: 3, sticky: 2, super: 0 },
         fans: [
             { x: 10, y: 250, width: 40, height: 40, direction: 'right' } // Moved Up/Left (50,300 -> 30,250)
         ],
         spikes: [
-            // Spikes inside tunnel (Extended left: x 200, width 200)
-            { x: 130, y: 260, width: 220, height: 10, direction: 'down' }, // Ceiling spikes
-            { x: 130, y: 310, width: 220, height: 10, direction: 'up' }, // Floor spikes (Raised)
+            { x: 120, y: 260, width: 230, height: 10, direction: 'down' }, // Ceiling spikes
+            { x: 120, y: 300, width: 230, height: 10, direction: 'up' }, // Floor spikes (Raised)
+            { x: 120, y: 230, width: 230, height: 10, direction: 'up' }, // Ceiling spikes
+
         ],
         noPlaceZones: [
             { x: 260, y: 280, width: 180, height: 75 }, // Ceiling no place zone
@@ -292,7 +293,7 @@ const levels = [
             { x: 175, y: 400, width: 10, height: 110 }, // Barrier
             { x: 120, y: 0, width: 230, height: 10 },
         ],
-        platforms: { normal: 2, sticky: 2, super: 1 },
+        platforms: { normal: 1, sticky: 2, super: 1 },
         fans: [
             // 3 Upward fans below goal to prevent straight drop
             { x: 20, y: 400, width: 40, height: 40, direction: 'up' },
@@ -317,13 +318,14 @@ const levels = [
             { x: 310, y: 450, width: 60, height: 10 },  // Roof (with gap?) No, open top.
             { x: 140, y: 355, width: 280, height: 10 }, // Right wall of bunker
         ],
-        platforms: { normal: 0, sticky: 0, super: 3 }, // Need to super jump over
+        platforms: { normal: 1, sticky: 0, super: 2 }, // Need to super jump over
         fans: [],
         spikes: [
-            { x: 0, y: 335, width: 280, height: 10, direction: 'up' } // Floor hazard
+            { x: 0, y: 335, width: 280, height: 10, direction: 'up' }, // Floor hazard
+            { x: 320, y: 0, width: 10, height: 230, direction: 'left' }, // Left hazard
         ],
         noPlaceZones: [
-            { x: 250, y: 250, width: 160, height: 500 }, // Left wall of bunker
+            { x: 250, y: 255, width: 170, height: 510 }, // Left wall of bunker
         ],
     },
 
@@ -348,10 +350,9 @@ const levels = [
             { x: 270, y: 100, width: 40, height: 40, direction: 'left' },
         ],
         spikes: [
-            { x: 10, y: 0, width: 10, height: 500, direction: 'right' },
+            { x: 10, y: 0, width: 10, height: 510, direction: 'right' },
         ]
     },
-
     // 17. The Vault
     {
         id: 17,
@@ -486,7 +487,9 @@ const levels = [
         balls: [{ x: 175, y: 50 }],
         goal: { x: 160, y: 310, width: 30, height: 30 },
         walls: [
-            { x: 175, y: 250, width: 200, height: 10 },
+            { x: 175, y: 250, width: 80, height: 10 },
+            { x: 80, y: 250, width: 30, height: 10 },
+            { x: 270, y: 250, width: 30, height: 10 },
             { x: 175, y: 350, width: 70, height: 10 },
         ],
         platforms: { normal: 1, sticky: 0, super: 3 },

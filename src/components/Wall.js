@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { COLORS } from '../utils/constants';
 
-const Wall = ({ body, size }) => {
+const Wall = React.memo(({ body, size, color }) => {
     if (!body) return null;
 
     return (
@@ -14,17 +14,18 @@ const Wall = ({ body, size }) => {
                     top: body.position.y - size.height / 2,
                     width: size.width,
                     height: size.height,
+                    backgroundColor: color || COLORS.wall,
                 },
             ]}
         />
     );
-};
+});
 
 const styles = StyleSheet.create({
     wall: {
         position: 'absolute',
-        backgroundColor: COLORS.wall,
         borderRadius: 4,
+        zIndex: 0,
     },
 });
 

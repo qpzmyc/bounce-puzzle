@@ -177,6 +177,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'visible',
+        zIndex: 2,
     },
     fanBody: {
         backgroundColor: COLORS.fan,
