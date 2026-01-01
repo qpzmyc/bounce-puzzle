@@ -7,13 +7,14 @@ import {
     Animated,
     Dimensions,
     Modal,
-    Switch
+    Switch,
+    Alert // Added Alert
 } from 'react-native';
 import { COLORS } from '../utils/constants';
-import { getLevelProgress, clearProgress, getSettings, saveSettings } from '../utils/storage';
+import { getLevelProgress, clearProgress, getSettings, saveSettings, unlockAllLevels } from '../utils/storage'; // Added unlockAllLevels
 import { getNextLevelOrRedirect } from '../utils/gameLogic';
-import levels from '../levels';
-import { Alert } from 'react-native';
+import levels from '../levels'; // This is likely world1Levels
+import world2Levels from '../levels/world2'; // Added for unlock all
 import { setSoundEnabled } from '../utils/audio';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -83,7 +84,7 @@ const MenuScreen = ({ navigation }) => {
     }, []);
 
     const handlePlay = () => {
-        navigation.navigate('LevelSelect');
+        navigation.navigate('WorldSelect');
     };
 
     const handleQuickPlay = () => {
@@ -119,6 +120,28 @@ const MenuScreen = ({ navigation }) => {
                         setProgress({});
                         setSettingsVisible(false);
                         Alert.alert("Reset Complete", "All progress has been cleared.");
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleUnlockAll = async () => {
+        Alert.alert(
+            "Unlock All Levels",
+            "This will mark all levels as completed with 3 stars. Great for testing!",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Unlock Everything",
+                    style: "default",
+                    onPress: async () => {
+                        // Assuming 'levels' is world1Levels
+                        const allLevels = [...levels, ...world2Levels];
+                        await unlockAllLevels(allLevels);
+                        // Refresh progress after unlocking
+                        getLevelProgress().then(setProgress);
+                        Alert.alert("Success", "All levels unlocked!");
                     }
                 }
             ]
@@ -175,7 +198,7 @@ const MenuScreen = ({ navigation }) => {
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.levelsButton} onPress={handlePlay}>
-                        <Text style={styles.levelsButtonText}>Select Level</Text>
+                        <Text style={styles.levelsButtonText}>Select World</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.settingsButton} onPress={() => setSettingsVisible(true)}>
@@ -224,6 +247,11 @@ const MenuScreen = ({ navigation }) => {
                         {/* Reset Progress */}
                         <TouchableOpacity style={styles.modalResetBtn} onPress={handleReset}>
                             <Text style={styles.modalResetTxt}>Reset All Progress</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={[styles.settingRow, { borderBottomWidth: 0, marginTop: s(20) }]} onPress={handleUnlockAll}>
+                            <Text style={[styles.settingText, { color: COLORS.ui.accent }]}>Unlock All Levels (Dev)</Text>
+                            <Text style={styles.settingSubtext}>Complete everything</Text>
                         </TouchableOpacity>
 
                         {/* Close */}

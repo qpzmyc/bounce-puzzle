@@ -1,0 +1,188 @@
+import React from 'react';
+import {
+    View,
+    Text,
+    StyleSheet,
+    TouchableOpacity,
+    Dimensions,
+    Alert,
+} from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { getLevelProgress } from '../utils/storage';
+import world1Levels from '../levels';
+import { COLORS } from '../utils/constants';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const BASE_WIDTH = 375;
+const uiScale = SCREEN_WIDTH / BASE_WIDTH;
+const s = (size) => Math.round(size * uiScale);
+
+const WORLDS = [
+    {
+        id: 1,
+        name: 'First World',
+        subtitle: 'The Basics',
+        color: '#22aac5ff', // Green
+        icon: '1',
+    },
+    {
+        id: 2,
+        name: 'Fire World',
+        subtitle: 'More Challenging',
+        color: '#f6665cff', // Purple
+        icon: '2',
+    },
+];
+
+const WorldSelectScreen = ({ navigation }) => {
+    const [progress, setProgress] = React.useState({});
+
+    useFocusEffect(
+        React.useCallback(() => {
+            getLevelProgress().then(setProgress);
+        }, [])
+    );
+
+    const isWorldUnlocked = (worldId) => {
+        if (worldId === 1) return true;
+        // Check if previous world is completed
+        // For World 2, check if last level of World 1 is completed
+        const lastLevelW1 = world1Levels[world1Levels.length - 1];
+        return !!progress[lastLevelW1.id]?.completed;
+    };
+
+    const handleWorldSelect = (worldId) => {
+        if (!isWorldUnlocked(worldId)) {
+            Alert.alert("World Locked", "Complete all levels in the previous world to unlock this one!");
+            return;
+        }
+        navigation.navigate('LevelSelect', { worldId });
+    };
+
+    return (
+        <View style={styles.container}>
+            <View style={styles.header}>
+                <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={() => navigation.navigate('Menu')}
+                >
+                    <Text style={styles.backButtonText}>←</Text>
+                </TouchableOpacity>
+                <Text style={styles.title}>Select World</Text>
+            </View>
+
+            <View style={styles.worldsContainer}>
+                {WORLDS.map((world) => {
+                    const unlocked = isWorldUnlocked(world.id);
+                    return (
+                        <TouchableOpacity
+                            key={world.id}
+                            style={[
+                                styles.worldCard,
+                                { borderColor: unlocked ? world.color : 'rgba(255,255,255,0.1)' },
+                                !unlocked && { opacity: 0.5 }
+                            ]}
+                            onPress={() => handleWorldSelect(world.id)}
+                        >
+                            <View style={[styles.worldIcon, { backgroundColor: unlocked ? world.color : '#333' }]}>
+                                <Text style={styles.worldIconText}>{unlocked ? world.icon : '🔒'}</Text>
+                            </View>
+                            <View style={styles.worldInfo}>
+                                <Text style={styles.worldName}>{world.name}</Text>
+                                <Text style={styles.worldSubtitle}>{unlocked ? world.subtitle : 'Locked'}</Text>
+                            </View>
+                            <View style={[styles.playIcon, { backgroundColor: unlocked ? world.color : '#333' }]}>
+                                <Text style={styles.playIconText}>{unlocked ? '▶' : '🔒'}</Text>
+                            </View>
+                        </TouchableOpacity>
+                    );
+                })}
+            </View>
+        </View>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: COLORS.background,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingTop: 60,
+        paddingBottom: 20,
+    },
+    backButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    backButtonText: {
+        color: COLORS.ui.text,
+        fontSize: 24,
+    },
+    title: {
+        color: COLORS.ui.text,
+        fontSize: 28,
+        fontWeight: 'bold',
+        marginLeft: 20,
+        flex: 1,
+    },
+    worldsContainer: {
+        flex: 1,
+        padding: 20,
+        justifyContent: 'center',
+    },
+    worldCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 20,
+        padding: s(20),
+        borderWidth: 2,
+        marginBottom: s(20),
+    },
+    worldIcon: {
+        width: s(70),
+        height: s(70),
+        borderRadius: s(35),
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    worldIconText: {
+        fontSize: s(32),
+    },
+    worldInfo: {
+        flex: 1,
+        marginLeft: s(20),
+    },
+    worldName: {
+        color: COLORS.ui.text,
+        fontSize: s(24),
+        fontWeight: 'bold',
+    },
+    worldSubtitle: {
+        color: COLORS.ui.textDim,
+        fontSize: s(16),
+        marginTop: s(4),
+    },
+    playIcon: {
+        width: s(50),
+        height: s(50),
+        borderRadius: s(25),
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    playIconText: {
+        color: '#fff',
+        fontSize: s(20),
+    },
+});
+
+export default WorldSelectScreen;

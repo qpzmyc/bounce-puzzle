@@ -76,3 +76,17 @@ export const clearProgress = async () => {
         console.error("Failed to clear progress", e);
     }
 };
+
+export const unlockAllLevels = async (allLevels) => {
+    try {
+        const progress = {};
+        allLevels.forEach(level => {
+            progress[level.id] = { stars: 3, completed: true };
+        });
+        await AsyncStorage.setItem(LEVEL_PROGRESS_KEY, JSON.stringify(progress));
+        return progress;
+    } catch (e) {
+        console.error("Failed to unlock all levels", e);
+        return {};
+    }
+};

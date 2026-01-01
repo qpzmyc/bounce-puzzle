@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { COLORS } from '../utils/constants';
 
-const Fan = ({ position, size, direction }) => {
+const Fan = ({ position, size, direction, color = COLORS.fan }) => {
     // Rotation mapping based on Right being 0deg
     const getRotation = () => {
         switch (direction) {
@@ -119,7 +119,7 @@ const Fan = ({ position, size, direction }) => {
             ]}
         >
             {/* Fan Body with Spinning Arrows */}
-            <View style={styles.fanBody}>
+            <View style={[styles.fanBody, { backgroundColor: color, shadowColor: color }]}>
                 {/* Spinning Container */}
                 <Animated.View style={{
                     width: 30, height: 30,
@@ -150,10 +150,10 @@ const Fan = ({ position, size, direction }) => {
                 styles.windContainerRight, // Always use Right logic, rotation handles direction
                 { width: WIND_RANGE }
             ]}>
-                <Animated.View style={[styles.windParticle, createWindStyle(animatedValues.wind1, -12)]} />
-                <Animated.View style={[styles.windParticle, createWindStyle(animatedValues.wind2, -4)]} />
-                <Animated.View style={[styles.windParticle, createWindStyle(animatedValues.wind3, 4)]} />
-                <Animated.View style={[styles.windParticle, createWindStyle(animatedValues.wind4, 12)]} />
+                <Animated.View style={[styles.windParticle, createWindStyle(animatedValues.wind1, -12), { backgroundColor: color }]} />
+                <Animated.View style={[styles.windParticle, createWindStyle(animatedValues.wind2, -4), { backgroundColor: color }]} />
+                <Animated.View style={[styles.windParticle, createWindStyle(animatedValues.wind3, 4), { backgroundColor: color }]} />
+                <Animated.View style={[styles.windParticle, createWindStyle(animatedValues.wind4, 12), { backgroundColor: color }]} />
                 <Animated.View style={[styles.windParticleLong, createWindStyle(animatedValues.wind5, 0)]} />
             </View>
 

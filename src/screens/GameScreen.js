@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated, PanResponder, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'; // Fixed Import
+import { useIsFocused } from '@react-navigation/native';
 import { GameEngine } from 'react-native-game-engine';
 import Matter from 'matter-js';
 import Ball from '../components/Ball';
@@ -14,6 +15,7 @@ import BallTrail from '../components/BallTrail';
 import Physics from '../systems/Physics';
 import { COLORS, PHYSICS, GAME, PLATFORM_TYPES } from '../utils/constants';
 import levels from '../levels';
+import world2Levels from '../levels/world2'; // Added World 2 import
 import { saveLevelProgress, getLevelProgress, getSettings } from '../utils/storage';
 import { getTotalStars, getNextLevelOrRedirect } from '../utils/gameLogic';
 import * as Haptics from 'expo-haptics';
@@ -133,8 +135,14 @@ const isPlacementValid = (x, y, angle, zones) => {
 
 const GameScreen = ({ route, navigation }) => {
 
+    const isFocused = useIsFocused();
     const levelId = route?.params?.levelId || 1;
-    const level = levels.find(l => l.id === levelId) || levels[0];
+    const allLevels = [...levels, ...world2Levels]; // Combine all worlds
+    const level = allLevels.find(l => l.id === levelId) || levels[0];
+
+    // Determine World ID based on Level ID (Simple logic: < 200 is W1, >= 200 is W2)
+    // Or better, check which array it came from, but ID range is reliable here.
+    const currentWorldId = levelId >= 200 ? 2 : 1;
 
     const insets = useSafeAreaInsets();
     // CALC DYNAMIC SCALE: How much space is left for the game area?
@@ -178,167 +186,195 @@ const GameScreen = ({ route, navigation }) => {
 
     // Build physics entities
     const buildEntities = (withBalls) => {
-        const engine = Matter.Engine.create({ enableSleeping: false });
-        engine.world.gravity = PHYSICS.gravity;
-        let ents = { physics: { engine, world: engine.world } };
+        try {
+            const engine = Matter.Engine.create({ enableSleeping: false });
+            engine.world.gravity = PHYSICS.gravity;
+            let ents = { physics: { engine, world: engine.world } };
 
-        // GLOBAL INVISIBLE SAFETY WALLS
-        const wallThick = 50;
-        const wallH = GAME.height * 2;
+            // GLOBAL INVISIBLE SAFETY WALLS
+            const wallThick = 50;
+            const wallH = GAME.height * 2;
 
-        // Left (Move inward to ensure no clipping) -> Edge at x=5
-        const leftWallBody = Matter.Bodies.rectangle(-20, GAME.height / 2, wallThick, wallH, { isStatic: true, restitution: 1.0, friction: 0 });
-        Matter.World.add(engine.world, leftWallBody);
-        ents['wall-left-invis'] = {
-            body: leftWallBody,
-            size: { width: wallThick, height: wallH },
-            renderer: Wall
-        };
-
-        // Right (Move inward) -> Edge at width-5
-        const rightWallBody = Matter.Bodies.rectangle(GAME.width + 20, GAME.height / 2, wallThick, wallH, { isStatic: true, restitution: 1.0, friction: 0 });
-        Matter.World.add(engine.world, rightWallBody);
-        ents['wall-right-invis'] = {
-            body: rightWallBody,
-            size: { width: wallThick, height: wallH },
-            renderer: Wall
-        };
-
-        level.walls.forEach((w, i) => {
-            const b = Matter.Bodies.rectangle(w.x, w.y, w.width, w.height, { isStatic: true, restitution: 0.3 });
-            Matter.World.add(engine.world, b);
-            ents[`wall${i}`] = { body: b, size: { width: w.width, height: w.height }, renderer: Wall };
-        });
-
-        ents.goal = { position: { x: level.goal.x, y: level.goal.y }, size: { width: level.goal.width, height: level.goal.height }, renderer: Goal };
-
-        (level.fans || []).forEach((f, i) => {
-            ents[`fan${i}`] = { position: { x: f.x, y: f.y }, size: { width: f.width, height: f.height }, direction: f.direction, renderer: Fan };
-        });
-
-        (level.spikes || []).forEach((s, i) => {
-            ents[`spike${i}`] = {
-                position: { x: s.x, y: s.y },
-                size: { width: s.width, height: s.height },
-                direction: s.direction || 'up',
-                renderer: Spike
+            // Left (Move inward to ensure no clipping) -> Edge at x=5
+            const leftWallBody = Matter.Bodies.rectangle(-20, GAME.height / 2, wallThick, wallH, { isStatic: true, restitution: 1.0, friction: 0 });
+            Matter.World.add(engine.world, leftWallBody);
+            ents['wall-left-invis'] = {
+                body: leftWallBody,
+                size: { width: wallThick, height: wallH },
+                renderer: Wall,
+                color: THEME.wall
             };
-        });
 
-        // Add GLOBAL FLOOR SPIKE
-        const floorY = GAME.height - 10;
-        ents['spike-floor'] = {
-            position: { x: 0, y: floorY },
-            size: { width: GAME.width, height: 20 },
-            renderer: Spike
-        };
+            // Right (Move inward) -> Edge at width-5
+            const rightWallBody = Matter.Bodies.rectangle(GAME.width + 20, GAME.height / 2, wallThick, wallH, { isStatic: true, restitution: 1.0, friction: 0 });
+            Matter.World.add(engine.world, rightWallBody);
+            ents['wall-right-invis'] = {
+                body: rightWallBody,
+                size: { width: wallThick, height: wallH },
+                renderer: Wall,
+                color: THEME.wall
+            };
 
-
-
-        placedPlatforms.forEach((p, i) => {
-            // NOTE: We rely on manual collision logic now, so restitution here is backup
-            const b = Matter.Bodies.rectangle(p.x, p.y, PHYSICS.platformWidth, PHYSICS.platformHeight, {
-                isStatic: true,
-                angle: p.angle || 0,
-                restitution: 0, // Manual override handles it
-                label: `platform-${p.type || 'normal'}` // Tag for collision listener
+            level.walls.forEach((w, i) => {
+                const b = Matter.Bodies.rectangle(w.x, w.y, w.width, w.height, { isStatic: true, restitution: 0.3 });
+                Matter.World.add(engine.world, b);
+                ents[`wall${i}`] = { body: b, size: { width: w.width, height: w.height }, renderer: Wall, color: THEME.wall };
             });
-            Matter.World.add(engine.world, b);
-            // During setup, use invisible renderer (DraggablePlatform handles visuals)
-            // During play, use Platform renderer
-            ents[`plat${i}`] = {
-                body: b,
-                size: { width: PHYSICS.platformWidth, height: PHYSICS.platformHeight },
-                platformType: p.type,
-                renderer: withBalls ? Platform : () => null
+
+            ents.goal = { position: { x: level.goal.x, y: level.goal.y }, size: { width: level.goal.width, height: level.goal.height }, renderer: Goal };
+
+            (level.fans || []).forEach((f, i) => {
+                ents[`fan${i}`] = { position: { x: f.x, y: f.y }, size: { width: f.width, height: f.height }, direction: f.direction, renderer: Fan, color: THEME.fan };
+            });
+
+            (level.spikes || []).forEach((s, i) => {
+                ents[`spike${i}`] = {
+                    position: { x: s.x, y: s.y },
+                    size: { width: s.width, height: s.height },
+                    direction: s.direction || 'up',
+                    renderer: Spike,
+                    color: THEME.spike
+                };
+            });
+
+            // Add GLOBAL FLOOR SPIKE
+            const floorY = GAME.height - 10;
+            ents['spike-floor'] = {
+                position: { x: 0, y: floorY },
+                size: { width: GAME.width, height: 20 },
+                renderer: Spike,
+                color: THEME.spike
             };
-        });
 
-        // Add trail entity for recording ball path
-        ents.trail = { points: [], renderer: () => null };  // Invisible renderer, we render separately
 
-        if (withBalls) {
-            (level.balls || [{ x: 160, y: 40 }]).forEach((pos, i) => {
-                const b = Matter.Bodies.circle(pos.x, pos.y, PHYSICS.ballRadius, {
-                    restitution: 0.5,
-                    friction: 0,
-                    frictionAir: 0.002,
-                    label: 'ball'
+
+            placedPlatforms.forEach((p, i) => {
+                // NOTE: We rely on manual collision logic now, so restitution here is backup
+                const b = Matter.Bodies.rectangle(p.x, p.y, PHYSICS.platformWidth, PHYSICS.platformHeight, {
+                    isStatic: true,
+                    angle: p.angle || 0,
+                    restitution: 0, // Manual override handles it
+                    label: `platform-${p.type || 'normal'}` // Tag for collision listener
                 });
                 Matter.World.add(engine.world, b);
-                ents[`ball${i}`] = { body: b, renderer: Ball };
+                // During setup, use invisible renderer (DraggablePlatform handles visuals)
+                // During play, use Platform renderer
+                ents[`plat${i}`] = {
+                    body: b,
+                    size: { width: PHYSICS.platformWidth, height: PHYSICS.platformHeight },
+                    platformType: p.type,
+                    renderer: withBalls ? Platform : () => null
+                };
             });
 
-            // CUSTOM COLLISION LOGIC
-            Matter.Events.on(engine, 'collisionStart', (event) => {
-                event.pairs.forEach((pair) => {
-                    const { bodyA, bodyB } = pair;
-                    // Identify ball and platform
-                    let ball = null;
-                    let platformLabel = null;
-                    let platformBody = null; // We need to know which is static to calculate normal?
+            // Add trail entity for recording ball path
+            ents.trail = { points: [], renderer: () => null };  // Invisible renderer, we render separately
 
-                    if (bodyA.label === 'ball') { ball = bodyA; platformLabel = bodyB.label; platformBody = bodyB; }
-                    else if (bodyB.label === 'ball') { ball = bodyB; platformLabel = bodyA.label; platformBody = bodyA; }
+            if (withBalls) {
+                (level.balls || [{ x: 160, y: 40 }]).forEach((pos, i) => {
+                    const b = Matter.Bodies.circle(pos.x, pos.y, PHYSICS.ballRadius, {
+                        restitution: 0.5,
+                        friction: 0,
+                        frictionAir: 0.002,
+                        label: 'ball'
+                    });
+                    Matter.World.add(engine.world, b);
+                    ents[`ball${i}`] = { body: b, renderer: Ball };
+                });
 
-                    if (ball && platformLabel && platformLabel.startsWith('platform-')) {
-                        const type = platformLabel.split('-')[1];
+                // Track which ball-platform pairs have already played sticky audio
+                const stickyBounced = new Set();
 
-                        // Ensure we are hitting the TOP of the platform? 
-                        // Actually, for "Super" we just want to launch it away.
-                        // But if we hit the bottom, we shouldn't launch UP.
-                        // Simple velocity check: if ball is moving DOWN (vy > 0), bounce.
-                        if (ball.velocity.y > 0) {
-                            if (type === 'sticky') {
-                                // STICKY: No bounce (Y=0), but apply standard rolling (Keep X)
-                                Matter.Body.setVelocity(ball, { x: ball.velocity.x, y: 0 });
-                                if (settings.haptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                                playSound('sticky');
-                            } else if (type === 'super') {
-                                // DIRECTIONAL SUPER JUMP
-                                // 1. Calculate Normal based on platform angle
-                                const angle = platformBody.angle;
-                                const normal = { x: Math.sin(angle), y: -Math.cos(angle) };
+                // CUSTOM COLLISION LOGIC
+                Matter.Events.on(engine, 'collisionStart', (event) => {
+                    event.pairs.forEach((pair) => {
+                        const { bodyA, bodyB } = pair;
+                        // Identify ball and platform
+                        let ball = null;
+                        let platformLabel = null;
+                        let platformBody = null; // We need to know which is static to calculate normal?
 
-                                // 2. Fixed Boost Magnitude (Back to 11)
-                                const speed = 11;
+                        if (bodyA.label === 'ball') { ball = bodyA; platformLabel = bodyB.label; platformBody = bodyB; }
+                        else if (bodyB.label === 'ball') { ball = bodyB; platformLabel = bodyA.label; platformBody = bodyA; }
 
-                                // 3. Apply velocity along the normal (Simple Launch)
-                                // OR Reflect? User said "reflect the angle".
-                                // A true reflection requires incoming vector.
-                                // Let's try simple Reflection of the velocity vector against the Normal.
-                                // V_new = V_old - 2(V_old . N)N
-                                const dot = ball.velocity.x * normal.x + ball.velocity.y * normal.y;
-                                const rx = ball.velocity.x - 2 * dot * normal.x;
-                                const ry = ball.velocity.y - 2 * dot * normal.y;
+                        if (ball && platformLabel && platformLabel.startsWith('platform-')) {
+                            const type = platformLabel.split('-')[1];
 
-                                // Normalize reflection and apply fixed boost speed
-                                const mag = Math.sqrt(rx * rx + ry * ry);
-                                if (mag > 0.1) {
-                                    Matter.Body.setVelocity(ball, {
-                                        x: (rx / mag) * speed,
-                                        y: (ry / mag) * speed
-                                    });
-                                    if (settings.haptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                                    playSound('super');
-                                }
-                            } else if (type === 'normal') {
-                                // Standard Bounce
-                                // Check if bounce is significant (>~5px height -> ~2.0 velocity)
-                                if (ball.velocity.y > 2.0) {
-                                    if (settings.haptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                                    playSound('normal');
+                            // Ensure we are hitting the TOP of the platform? 
+                            // Actually, for "Super" we just want to launch it away.
+                            // But if we hit the bottom, we shouldn't launch UP.
+                            // Simple velocity check: if ball is moving DOWN (vy > 0), bounce.
+                            if (ball.velocity.y > 0) {
+                                if (type === 'sticky') {
+                                    // STICKY: No bounce (Y=0), but apply standard rolling (Keep X)
+                                    Matter.Body.setVelocity(ball, { x: ball.velocity.x, y: 0 });
+                                    // Play sound only once per ball-platform pair
+                                    const key = `${ball.id}-${platformBody.id}`;
+                                    if (!stickyBounced.has(key)) {
+                                        stickyBounced.add(key);
+                                        if (settings.haptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                                        playSound('sticky');
+                                    }
+                                } else if (type === 'super') {
+                                    // DIRECTIONAL SUPER JUMP
+                                    // 1. Calculate Normal based on platform angle
+                                    const angle = platformBody.angle;
+                                    const normal = { x: Math.sin(angle), y: -Math.cos(angle) };
+
+                                    // 2. Fixed Boost Magnitude (Back to 11)
+                                    const speed = 11;
+
+                                    // 3. Apply velocity along the normal (Simple Launch)
+                                    // OR Reflect? User said "reflect the angle".
+                                    // A true reflection requires incoming vector.
+                                    // Let's try simple Reflection of the velocity vector against the Normal.
+                                    // V_new = V_old - 2(V_old . N)N
+                                    const dot = ball.velocity.x * normal.x + ball.velocity.y * normal.y;
+                                    const rx = ball.velocity.x - 2 * dot * normal.x;
+                                    const ry = ball.velocity.y - 2 * dot * normal.y;
+
+                                    // Normalize reflection and apply fixed boost speed
+                                    const mag = Math.sqrt(rx * rx + ry * ry);
+                                    if (mag > 0.1) {
+                                        Matter.Body.setVelocity(ball, {
+                                            x: (rx / mag) * speed,
+                                            y: (ry / mag) * speed
+                                        });
+                                        if (settings.haptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                                        playSound('super');
+                                    }
+                                } else if (type === 'normal') {
+                                    // Standard Bounce
+                                    // Check if bounce is significant (>~5px height -> ~2.0 velocity)
+                                    if (ball.velocity.y > 2.0) {
+                                        if (settings.haptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                        playSound('normal');
+                                    }
                                 }
                             }
                         }
-                    }
+                    });
                 });
-            });
+            }
+            return ents;
+        } catch (error) {
+            console.error("[GameScreen] Build Entities Error:", error);
+            // Alert.alert("Error", "Failed to load level entities: " + error.message);
+            return {};
         }
-        return ents;
+
     };
 
     useEffect(() => { setPlacedPlatforms([]); setGameState('setup'); setStars(0); setLastTrail([]); setLiveTrail([]); }, [levelId]);
+
+    const isWorld2 = levelId >= 200;
+    const THEME = {
+        wall: isWorld2 ? '#f97316' : COLORS.wall, // Orange for World 2
+        spike: isWorld2 ? '#ef4444' : COLORS.spike, // Red for World 2
+        fan: isWorld2 ? '#eab308' : COLORS.fan, // Yellow for World 2
+    };
+
+    // console.log(`[GameScreen] Level: ${levelId}...`);
 
     // Initialize Audio
     useEffect(() => {
@@ -350,6 +386,10 @@ const GameScreen = ({ route, navigation }) => {
         const e = buildEntities(false);
         setEntities(e);
         gameEngineRef.current?.swap(e);
+
+        if (levelId >= 200) {
+            // Debug check removed
+        }
     }, [placedPlatforms, levelId]);
 
     useEffect(() => {
@@ -403,7 +443,7 @@ const GameScreen = ({ route, navigation }) => {
     const handleNext = async () => {
         setLastTrail([]);  // Clear trail when moving to next level
         setLiveTrail([]);
-        const nextLevel = levels.find(l => l.id === levelId + 1);
+        const nextLevel = allLevels.find(l => l.id === levelId + 1);
 
         if (!nextLevel) {
             // No more levels, go to menu
@@ -434,6 +474,10 @@ const GameScreen = ({ route, navigation }) => {
 
         // Proceed to next level
         navigation.navigate('Game', { levelId: nextLevel.id });
+    };
+
+    const handleBack = () => {
+        navigation.navigate('LevelSelect', { worldId: currentWorldId });
     };
 
     const handleEvent = (e) => {
@@ -628,7 +672,7 @@ const GameScreen = ({ route, navigation }) => {
                 alignItems: 'center',
             }]}>
                 {/* LEFT: Back Arrow - Vertically centered across both rows */}
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.navigate('Menu')}>
+                <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
                     <Text style={styles.icon}>←</Text>
                 </TouchableOpacity>
 
@@ -639,7 +683,7 @@ const GameScreen = ({ route, navigation }) => {
                         {/* Level Title Box */}
                         <View style={styles.titleBox}>
                             <Text style={styles.title} numberOfLines={1}>
-                                Level {level.id}: {level.name}
+                                Level {level.id >= 200 ? level.id - 200 : level.id}: {level.name}
                             </Text>
                         </View>
                         {/* Stars Box */}
@@ -698,7 +742,7 @@ const GameScreen = ({ route, navigation }) => {
                     }}
                 >
                     <View style={{ width: GAME.width, height: GAME.height, transform: [{ scale }], transformOrigin: 'top left', backgroundColor: '#0a0a18' }}>
-                        {entities && <GameEngine ref={gameEngineRef} style={{ width: GAME.width, height: GAME.height }} systems={[Physics]} entities={entities} running={gameState === 'playing'} onEvent={handleEvent} />}
+                        {entities && <GameEngine ref={gameEngineRef} style={{ width: GAME.width, height: GAME.height }} systems={[Physics]} entities={entities} running={gameState === 'playing' && isFocused} onEvent={handleEvent} />}
 
                         {gameState === 'setup' && lastTrail.length > 0 && <BallTrail points={lastTrail} />}
                         {gameState === 'playing' && liveTrail.length > 0 && <BallTrail points={liveTrail} />}

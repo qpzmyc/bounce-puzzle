@@ -9,14 +9,24 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../utils/constants';
-import levels from '../levels';
+import world1Levels from '../levels';
+import world2Levels from '../levels/world2';
 import { getLevelProgress } from '../utils/storage';
 import { getNextLevelOrRedirect, getTotalStars } from '../utils/gameLogic';
 import { Alert } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const LevelSelectScreen = ({ navigation }) => {
+const WORLD_CONFIG = {
+    1: { levels: world1Levels, title: 'World 1', color: '#22c55e' },
+    2: { levels: world2Levels, title: 'World 2', color: '#8b5cf6' },
+};
+
+const LevelSelectScreen = ({ route, navigation }) => {
+    const worldId = route?.params?.worldId || 1;
+    const world = WORLD_CONFIG[worldId] || WORLD_CONFIG[1];
+    const levels = world.levels;
+
     const [progress, setProgress] = useState({});
 
     useFocusEffect(
@@ -76,11 +86,11 @@ const LevelSelectScreen = ({ navigation }) => {
             <View style={styles.header}>
                 <TouchableOpacity
                     style={styles.backButton}
-                    onPress={() => navigation.navigate('Menu')}
+                    onPress={() => navigation.navigate('WorldSelect')}
                 >
                     <Text style={styles.backButtonText}>←</Text>
                 </TouchableOpacity>
-                <Text style={styles.title}>Select Level</Text>
+                <Text style={styles.title}>{world.title}</Text>
             </View>
 
             <ScrollView
@@ -101,25 +111,17 @@ const LevelSelectScreen = ({ navigation }) => {
                             onPress={() => handleLevelSelect(level.id)}
                         >
                             <View style={[styles.levelNumber, { backgroundColor: iconBg }]}>
-                                <Text style={styles.levelNumberText}>{level.id}</Text>
+                                <Text style={styles.levelNumberText}>{index + 1}</Text>
                             </View>
                             <View style={styles.levelInfo}>
                                 <Text style={styles.levelName}>
                                     {level.name}
-                                    {level.requiredStars ? ` (🔒 ${level.requiredStars})` : ''}
                                 </Text>
                                 {/* Stars instead of Description */}
                                 <View style={styles.starsRow}>
                                     {[1, 2, 3].map(i => (
                                         <Text key={i} style={{ fontSize: 16, color: i <= stars ? COLORS.ui.star : COLORS.ui.starEmpty }}>★</Text>
                                     ))}
-                                </View>
-                                <View style={styles.levelMeta}>
-                                    <View style={styles.platformBadge}>
-                                        <Text style={styles.platformBadgeText}>
-                                            {(level.platforms.normal || 0) + (level.platforms.sticky || 0) + (level.platforms.super || 0)} platforms
-                                        </Text>
-                                    </View>
                                 </View>
                             </View>
                             <View style={[styles.playIcon, { backgroundColor: iconBg }]}>

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { COLORS } from '../utils/constants';
 
-const Spike = ({ position, size, direction = 'up' }) => {
+const Spike = ({ position, size, direction = 'up', color = COLORS.spike }) => {
     const isHorizontal = direction === 'up' || direction === 'down';
     // If horizontal (up/down), spikes runs along width. If vertical (left/right), runs along height.
     const length = isHorizontal ? size.width : size.height;
@@ -40,13 +40,13 @@ const Spike = ({ position, size, direction = 'up' }) => {
 
         switch (direction) {
             case 'up':
-                return { ...base, borderBottomWidth: size, borderLeftWidth: halfBase, borderRightWidth: halfBase, borderBottomColor: COLORS.spike };
+                return { ...base, borderBottomWidth: size, borderLeftWidth: halfBase, borderRightWidth: halfBase, borderBottomColor: color };
             case 'down':
-                return { ...base, borderTopWidth: size, borderLeftWidth: halfBase, borderRightWidth: halfBase, borderTopColor: COLORS.spike };
+                return { ...base, borderTopWidth: size, borderLeftWidth: halfBase, borderRightWidth: halfBase, borderTopColor: color };
             case 'left':
-                return { ...base, borderRightWidth: size, borderTopWidth: halfBase, borderBottomWidth: halfBase, borderRightColor: COLORS.spike };
+                return { ...base, borderRightWidth: size, borderTopWidth: halfBase, borderBottomWidth: halfBase, borderRightColor: color };
             case 'right':
-                return { ...base, borderLeftWidth: size, borderTopWidth: halfBase, borderBottomWidth: halfBase, borderLeftColor: COLORS.spike };
+                return { ...base, borderLeftWidth: size, borderTopWidth: halfBase, borderBottomWidth: halfBase, borderLeftColor: color };
             default:
                 return base;
         }

@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import MenuScreen from './src/screens/MenuScreen';
+import WorldSelectScreen from './src/screens/WorldSelectScreen';
 import LevelSelectScreen from './src/screens/LevelSelectScreen';
 import GameScreen from './src/screens/GameScreen';
 
@@ -25,6 +26,7 @@ export default function App() {
             }}
           >
             <Stack.Screen name="Menu" component={MenuScreen} />
+            <Stack.Screen name="WorldSelect" component={WorldSelectScreen} />
             <Stack.Screen name="LevelSelect" component={LevelSelectScreen} />
             <Stack.Screen name="Game" component={GameScreen} />
           </Stack.Navigator>
