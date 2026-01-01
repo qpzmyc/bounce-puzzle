@@ -13,7 +13,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.qpzmyc.bouncepuzzle",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -24,6 +28,20 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-9298010065130394~6679897257",
+          "iosAppId": "ca-app-pub-9298010065130394~6679897257"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "c07d491b-9169-4180-9822-8179aa6e89e0"
+      }
     }
   }
 }

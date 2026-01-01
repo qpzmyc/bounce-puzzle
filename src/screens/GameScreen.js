@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated, PanResponder, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context'; // Fixed Import
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'; // Fixed Import
 import { GameEngine } from 'react-native-game-engine';
 import Matter from 'matter-js';
 import Ball from '../components/Ball';
@@ -18,17 +18,28 @@ import { saveLevelProgress, getLevelProgress, getSettings } from '../utils/stora
 import { getTotalStars, getNextLevelOrRedirect } from '../utils/gameLogic';
 import * as Haptics from 'expo-haptics';
 import { loadSounds, playSound, unloadSounds, setSoundEnabled } from '../utils/audio';
+import { BannerAd, BannerAdSize, TestIds } from '../utils/ads';
+
+const productionAdUnitID = 'ca-app-pub-9298010065130394/2984194822';
+// Always use TestIds.BANNER in development/simulators to avoid violating Google policy
+// But user asked to use *this* code. We'll use conditional logic.
+const adUnitID = __DEV__ ? TestIds.BANNER : productionAdUnitID;
+
 
 const { width: SW, height: SH } = Dimensions.get('window');
 
-const scale = Math.min((SW - 10) / GAME.width, (SH - 160) / GAME.height);
+const BASE_WIDTH = 375;
+const uiScale = SW / BASE_WIDTH;
+const s = (size) => Math.round(size * uiScale);
 
 // Store measured game area position globally (will be set by ref callback)
 let measuredGameAreaLayout = null;
 
 // Convert screen coordinates to game coordinates
 // Uses measured layout when available, otherwise falls back to calculation
-const screenToGameCoords = (touchX, touchY, layoutOverride = null) => {
+// Convert screen coordinates to game coordinates
+// Uses measured layout when available, otherwise falls back to calculation
+const screenToGameCoords = (touchX, touchY, scale, layoutOverride = null) => {
     const layout = layoutOverride || measuredGameAreaLayout;
 
     let gameAreaLeft, gameAreaTop, gameAreaRight, gameAreaBottom;
@@ -41,6 +52,7 @@ const screenToGameCoords = (touchX, touchY, layoutOverride = null) => {
         gameAreaBottom = layout.y + layout.height;
     } else {
         // Fallback to calculated position (less accurate)
+        // Note: This fallback relies on the 'scale' passed in
         gameAreaLeft = (SW - GAME.width * scale) / 2;
         gameAreaTop = 140; // Approximate
         gameAreaRight = gameAreaLeft + GAME.width * scale;
@@ -123,6 +135,15 @@ const GameScreen = ({ route, navigation }) => {
 
     const levelId = route?.params?.levelId || 1;
     const level = levels.find(l => l.id === levelId) || levels[0];
+
+    const insets = useSafeAreaInsets();
+    // CALC DYNAMIC SCALE: How much space is left for the game area?
+    // Reserves: Header area (roughly s(90)) + Footer area (roughly s(60)) + Safe Area Insets
+    const headerReserved = s(85);
+    const footerReserved = s(65);
+    const availW = SW - s(20);
+    const availH = SH - insets.top - insets.bottom - headerReserved - footerReserved;
+    const scale = Math.min(availW / GAME.width, availH / GAME.height);
 
     const [gameState, setGameState] = useState('setup');
     const [placedPlatforms, setPlacedPlatforms] = useState([]);
@@ -378,11 +399,6 @@ const GameScreen = ({ route, navigation }) => {
         gameEngineRef.current?.swap(e);
     };
 
-    const handleClearPlatforms = () => {
-        setPlacedPlatforms([]);
-        setDraggingPlatform(null);  // Reset dragging state
-        setGameState('setup');
-    };
 
     const handleNext = async () => {
         setLastTrail([]);  // Clear trail when moving to next level
@@ -502,7 +518,7 @@ const GameScreen = ({ route, navigation }) => {
     const handleDragStart = React.useCallback((type, evt) => {
         const touchX = evt.nativeEvent.pageX;
         const touchY = evt.nativeEvent.pageY;
-        const gamePos = screenToGameCoords(touchX, touchY);
+        const gamePos = screenToGameCoords(touchX, touchY, scale);
 
         // Add Y offset so platform appears ABOVE finger for better visibility
         const bankDragOffsetY = -50;
@@ -516,12 +532,12 @@ const GameScreen = ({ route, navigation }) => {
         // Bank drag always starts with 0 rotation
         const isValid = gamePos.isInBounds && isPlacementValid(gamePos.gameX, offsetGameY, 0, level.noPlaceZones);
         setDraggingPlatform({ type, gameX: gamePos.gameX, gameY: offsetGameY, isValid });
-    }, [level]);
+    }, [level, scale]);
 
     const handleDragMove = React.useCallback((type, evt) => {
         const touchX = evt.nativeEvent.pageX;
         const touchY = evt.nativeEvent.pageY;
-        const targetPos = screenToGameCoords(touchX, touchY);
+        const targetPos = screenToGameCoords(touchX, touchY, scale);
 
         // Add Y offset so platform appears ABOVE finger for better visibility
         const bankDragOffsetY = -50;
@@ -564,7 +580,7 @@ const GameScreen = ({ route, navigation }) => {
             gameY: newY,
             isValid: inBounds && isPlacementValid(newX, newY, 0, level.noPlaceZones)
         });
-    }, [level]);
+    }, [level, scale]);
 
     const handleDragRelease = React.useCallback((type, evt) => {
         const gameX = dragPosRef.current.x;
@@ -601,15 +617,81 @@ const GameScreen = ({ route, navigation }) => {
 
 
 
+
     return (
-        <SafeAreaView style={styles.safe}>
-            {/* 1. Game Area (Rendered First = Bottom Layer) */}
-            <View style={{ flex: 1, justifyContent: 'center', marginTop: 80, marginBottom: 60 }}>
+        <View style={styles.safe}>
+            {/* 1. Header Area - Three Columns: Back | Content | Refresh */}
+            <View style={[styles.header, {
+                paddingTop: insets.top + s(8),
+                height: insets.top + headerReserved,
+                flexDirection: 'row',
+                alignItems: 'center',
+            }]}>
+                {/* LEFT: Back Arrow - Vertically centered across both rows */}
+                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.navigate('Menu')}>
+                    <Text style={styles.icon}>←</Text>
+                </TouchableOpacity>
+
+                {/* CENTER: Two rows of content */}
+                <View style={{ flex: 1, paddingHorizontal: s(8) }}>
+                    {/* Row 1: Level Title + Stars */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: s(8) }}>
+                        {/* Level Title Box */}
+                        <View style={styles.titleBox}>
+                            <Text style={styles.title} numberOfLines={1}>
+                                Level {level.id}: {level.name}
+                            </Text>
+                        </View>
+                        {/* Stars Box */}
+                        <View style={styles.starsBox}>
+                            <Stars count={calculateStars()} size={s(16)} />
+                        </View>
+                    </View>
+
+                    {/* Row 2: Platform Bank + DROP Button */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                        {/* Platform Bank Box */}
+                        <View style={styles.bankBox}>
+                            <View style={styles.bank}>
+                                {Object.keys(PLATFORM_TYPES).map(k => {
+                                    const rem = getRemainingByType(k);
+                                    if ((level.platforms[k] || 0) === 0) return null;
+                                    return (
+                                        <DraggableBankItem
+                                            key={k}
+                                            type={k}
+                                            remaining={rem}
+                                            disabled={rem === 0 || gameState !== 'setup'}
+                                            isDragging={draggingPlatform?.type === k}
+                                            onDragStart={handleDragStart}
+                                            onDragMove={handleDragMove}
+                                            onDragRelease={handleDragRelease}
+                                            onDrop={() => addPlatform(k)}
+                                        />
+                                    );
+                                })}
+                            </View>
+                        </View>
+
+                        {/* DROP Button */}
+                        <TouchableOpacity style={[styles.dropBtn, gameState !== 'setup' && { opacity: 0.4 }]} onPress={handleDrop}>
+                            <Text style={styles.dropTxt}>DROP</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                {/* RIGHT: Refresh/Retry Button - Vertically centered across both rows */}
+                <TouchableOpacity style={styles.retryHeaderBtn} onPress={handleRetry}>
+                    <Text style={styles.retryIcon}>↺</Text>
+                </TouchableOpacity>
+            </View>
+
+            {/* 2. Body Area (Centers the Game board) */}
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <View
                     ref={gameAreaRef}
                     style={[styles.gameWrap, { width: GAME.width * scale, height: GAME.height * scale }]}
                     onLayout={(event) => {
-                        // Measure actual position on screen
                         event.target.measureInWindow((x, y, width, height) => {
                             measuredGameAreaLayout = { x, y, width, height };
                         });
@@ -618,17 +700,14 @@ const GameScreen = ({ route, navigation }) => {
                     <View style={{ width: GAME.width, height: GAME.height, transform: [{ scale }], transformOrigin: 'top left', backgroundColor: '#0a0a18' }}>
                         {entities && <GameEngine ref={gameEngineRef} style={{ width: GAME.width, height: GAME.height }} systems={[Physics]} entities={entities} running={gameState === 'playing'} onEvent={handleEvent} />}
 
-                        {/* Show trail: last attempt during setup, or live trail during playing */}
                         {gameState === 'setup' && lastTrail.length > 0 && <BallTrail points={lastTrail} />}
                         {gameState === 'playing' && liveTrail.length > 0 && <BallTrail points={liveTrail} />}
 
                         {gameState === 'setup' && (level.balls || []).map((b, i) => <StartArea key={i} position={b} />)}
-
                         {gameState === 'setup' && placedPlatforms.map((p, i) => (
                             <DraggablePlatform key={i} p={p} i={i} scale={scale} onUpdate={updatePlatform} onRemove={removePlatform} zones={level.noPlaceZones} />
                         ))}
 
-                        {/* Ghost preview while dragging from bank */}
                         {draggingPlatform && draggingPlatform.gameX != null && draggingPlatform.gameY != null && (
                             <View
                                 style={{
@@ -646,7 +725,6 @@ const GameScreen = ({ route, navigation }) => {
                                 }}
                             />
                         )}
-                        {/* Rendering No-Place Zones */}
                         {(level.noPlaceZones || []).map((z, i) => (
                             <View
                                 key={`npz-${i}`}
@@ -656,7 +734,7 @@ const GameScreen = ({ route, navigation }) => {
                                     top: z.y - z.height / 2,
                                     width: z.width,
                                     height: z.height,
-                                    backgroundColor: 'rgba(239, 68, 68, 0.2)', // Translucent Red
+                                    backgroundColor: 'rgba(239, 68, 68, 0.2)',
                                     borderWidth: 1,
                                     borderColor: 'rgba(239, 68, 68, 0.5)',
                                     borderStyle: 'dashed',
@@ -665,7 +743,6 @@ const GameScreen = ({ route, navigation }) => {
                         ))}
                     </View>
 
-                    {/* Overlay */}
                     {(gameState === 'win' || gameState === 'lose') && (
                         <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
                             <View style={[styles.overlayBox, gameState === 'win' ? styles.winBox : styles.loseBox]}>
@@ -680,63 +757,15 @@ const GameScreen = ({ route, navigation }) => {
                 </View>
             </View>
 
-            {/* 2. Header (Absolute Top) */}
-            <View style={[styles.header, { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-between' }]}>
-                {/* Left Block: Back, Title, Stars */}
-                <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                        <TouchableOpacity style={[styles.backBtn, { marginTop: 20 }]} onPress={() => navigation.navigate('Menu')}>
-                            <Text style={styles.icon}>←</Text>
-                        </TouchableOpacity>
-                        <Text style={[styles.title, { marginTop: -10 }]}>{level.id}. {level.name}</Text>
-                    </View>
-                    <View style={{ paddingLeft: 45, marginTop: -15 }}>
-                        <Stars count={calculateStars()} size={18} />
-                    </View>
-                </View>
+            {/* 3. Footer Area */}
+            <View style={[styles.footer, { paddingBottom: insets.bottom + s(8), height: insets.bottom + footerReserved }]}>
 
-                {/* Right Block: Retry/Bank Column + Drop */}
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginRight: 35 }}>
-                    {/* Retry & Bank Column */}
-                    {/* Fixed width to ensure Retry button stays in place regardless of bank size */}
-                    <View style={{ alignItems: 'center', marginRight: 8, width: 32 }}>
-                        {/* Retry Button */}
-                        <TouchableOpacity style={[styles.retryHeaderBtn, { marginRight: 0 }]} onPress={handleRetry}>
-                            <Text style={styles.retryIcon}>↺</Text>
-                        </TouchableOpacity>
-
-                        {/* Bank - Absolute positioning to center on button without affecting layout */}
-                        {/* 200px width centered: 100 - 16(half btn) = 84 offset */}
-                        <View style={[styles.bank, { position: 'absolute', top: 38, width: 200, left: -49 }]}>
-                            {Object.keys(PLATFORM_TYPES).map(k => {
-                                const rem = getRemainingByType(k);
-                                if ((level.platforms[k] || 0) === 0) return null;
-                                return (
-                                    <DraggableBankItem
-                                        key={k}
-                                        type={k}
-                                        remaining={rem}
-                                        disabled={rem === 0 || gameState !== 'setup'}
-                                        isDragging={draggingPlatform?.type === k}
-                                        onDragStart={handleDragStart}
-                                        onDragMove={handleDragMove}
-                                        onDragRelease={handleDragRelease}
-                                        onDrop={() => addPlatform(k)}
-                                    />
-                                );
-                            })}
-                        </View>
-                    </View>
-
-                    {/* Drop Button */}
-                    <TouchableOpacity style={[styles.dropBtn, gameState !== 'setup' && { opacity: 0.4 }]} onPress={handleDrop}>
-                        <Text style={styles.dropTxt}>DROP!</Text>
-                    </TouchableOpacity>
+                {/* Banner Ad Area (Hidden if no ad space, but reserved via footerReserved) */}
+                <View style={{ width: '100%', alignItems: 'center', backgroundColor: 'transparent', marginTop: s(4) }}>
+                    <BannerAd unitId={adUnitID} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} />
                 </View>
             </View>
-
-
-        </SafeAreaView>
+        </View>
     );
 };
 
@@ -821,7 +850,7 @@ const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones }) => {
 
                 const touchX = evt.nativeEvent.pageX;
                 const touchY = evt.nativeEvent.pageY;
-                const gamePos = screenToGameCoords(touchX, touchY);
+                const gamePos = screenToGameCoords(touchX, touchY, scale);
 
                 pRef.current.dragOffsetX = gamePos.gameX - currentP.x;
                 pRef.current.dragOffsetY = gamePos.gameY - currentP.y;
@@ -833,7 +862,7 @@ const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones }) => {
             onPanResponderMove: (evt) => {
                 const touchX = evt.nativeEvent.pageX;
                 const touchY = evt.nativeEvent.pageY;
-                const gamePos = screenToGameCoords(touchX, touchY);
+                const gamePos = screenToGameCoords(touchX, touchY, scale);
 
                 // Target: Finger Pos - Initial Offset
                 let targetX = gamePos.gameX - (pRef.current.dragOffsetX || 0);
@@ -1117,27 +1146,58 @@ const DraggableBankItem = React.memo(({ type, remaining, disabled, isDragging, o
 
 const styles = StyleSheet.create({
     safe: { flex: 1, backgroundColor: COLORS.background },
-    header: { padding: 8, paddingTop: 23, backgroundColor: 'rgba(0,0,0,0.2)', zIndex: 1000, elevation: 50 },
-    headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-    backBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
-    icon: { color: '#fff', fontSize: 18 },
-    title: { color: '#fff', fontSize: 14, fontWeight: '600', marginLeft: 8, flex: 1 },
-    retryHeaderBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 8 },
-    retryIcon: { color: '#fff', fontSize: 20 },
-    dropBtn: { backgroundColor: '#7F00FF', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 8 },
-    dropTxt: { color: '#fff', fontWeight: 'bold' },
+    header: { padding: s(8), backgroundColor: 'rgba(0,0,0,0.2)', zIndex: 1000, elevation: 50 },
+    headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: s(6) },
+    backBtn: { width: s(32), height: s(32), borderRadius: s(16), backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
+    icon: { color: '#fff', fontSize: s(18) },
+    title: { color: '#fff', fontSize: s(12), fontWeight: '600' },
+    retryHeaderBtn: { width: s(32), height: s(32), borderRadius: s(16), backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
+    retryIcon: { color: '#fff', fontSize: s(20) },
+    infoBox: {
+        height: s(28),
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: s(6),
+        justifyContent: 'center',
+        paddingHorizontal: s(8),
+    },
+    dropBtn: { backgroundColor: '#7F00FF', paddingHorizontal: s(20), paddingVertical: s(6), borderRadius: s(8) },
+    dropTxt: { color: '#fff', fontWeight: 'bold', fontSize: s(14) },
+    titleBox: {
+        width: s(200),
+        height: s(28),
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: s(6),
+        justifyContent: 'center',
+        paddingHorizontal: s(8),
+        marginRight: s(6),
+    },
+    starsBox: {
+        width: s(80),
+        height: s(28),
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: s(6),
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    bankBox: {
+        width: s(200),
+        height: s(28),
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: s(8),
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: s(4),
+        marginRight: s(6),
+    },
     bank: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.15)',
-        borderRadius: 12,
-        padding: 4,
     },
-    bankItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', paddingVertical: 4, paddingHorizontal: 8, borderRadius: 6, margin: 2 },
-    bankPlat: { width: 24, height: 8, borderRadius: 4, alignItems: 'center', justifyContent: 'center', marginRight: 4 },
-    bankIcon: { fontSize: 6, color: '#fff' },
-    bankCnt: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
+    bankItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', paddingVertical: s(4), paddingHorizontal: s(8), borderRadius: s(6), margin: s(2) },
+    bankPlat: { width: s(24), height: s(8), borderRadius: s(4), alignItems: 'center', justifyContent: 'center', marginRight: s(4) },
+    bankIcon: { fontSize: s(6), color: '#fff' },
+    bankCnt: { color: '#fff', fontSize: s(10), fontWeight: 'bold' },
     gameWrap: { alignSelf: 'center', backgroundColor: '#0f0f1b', borderRadius: 8, marginVertical: 4, borderWidth: 1, borderColor: '#333', overflow: 'hidden' },
     footer: { Padding: 10, alignItems: 'center', justifyContent: 'center', height: 50, zIndex: 1000, elevation: 50 },
     clearBtn: { backgroundColor: 'rgba(239,68,68,0.15)', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20 },

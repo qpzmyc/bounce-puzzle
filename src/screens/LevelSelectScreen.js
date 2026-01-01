@@ -39,16 +39,6 @@ const LevelSelectScreen = ({ navigation }) => {
         navigation.navigate('Game', { levelId });
     };
 
-    const handleQuickPlay = () => {
-        const { levelId, redirect, message } = getNextLevelOrRedirect(levels, progress);
-        if (redirect && message) {
-            Alert.alert("Locked", message, [
-                { text: "Go to Level", onPress: () => navigation.navigate('Game', { levelId }) }
-            ]);
-        } else {
-            navigation.navigate('Game', { levelId });
-        }
-    };
 
     // Determine card style based on state
     // Green: Next level to play (First uncompleted)
@@ -91,10 +81,6 @@ const LevelSelectScreen = ({ navigation }) => {
                     <Text style={styles.backButtonText}>←</Text>
                 </TouchableOpacity>
                 <Text style={styles.title}>Select Level</Text>
-
-                <TouchableOpacity style={styles.quickPlayBtn} onPress={handleQuickPlay}>
-                    <Text style={styles.quickPlayTxt}>⚡ Quick Play</Text>
-                </TouchableOpacity>
             </View>
 
             <ScrollView
@@ -178,17 +164,7 @@ const styles = StyleSheet.create({
         marginLeft: 20,
         flex: 1,
     },
-    quickPlayBtn: {
-        backgroundColor: '#f59e0b',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 20,
-    },
-    quickPlayTxt: {
-        color: '#fff',
-        fontWeight: 'bold',
-        fontSize: 14
-    },
+
     scrollView: {
         flex: 1,
     },

@@ -18,6 +18,11 @@ import { setSoundEnabled } from '../utils/audio';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+// Screen-based scaling (same as GameScreen)
+const BASE_WIDTH = 375;
+const uiScale = SCREEN_WIDTH / BASE_WIDTH;
+const s = (size) => Math.round(size * uiScale);
+
 const MenuScreen = ({ navigation }) => {
     const [progress, setProgress] = React.useState({});
     const [settingsVisible, setSettingsVisible] = useState(false);
@@ -166,7 +171,7 @@ const MenuScreen = ({ navigation }) => {
                 {/* Buttons */}
                 <View style={styles.buttons}>
                     <TouchableOpacity style={styles.playButton} onPress={handleQuickPlay}>
-                        <Text style={styles.playButtonText}>▶  Quick Play</Text>
+                        <Text style={styles.playButtonText}>▶</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.levelsButton} onPress={handlePlay}>
@@ -174,22 +179,11 @@ const MenuScreen = ({ navigation }) => {
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.settingsButton} onPress={() => setSettingsVisible(true)}>
-                        <Text style={styles.settingsButtonText}>⚙ Settings</Text>
+                        <Text style={styles.settingsButtonText}>Settings</Text>
                     </TouchableOpacity>
                 </View>
 
-                <View style={styles.instructions}>
-                    <Text style={styles.instructionTitle}>How to Play</Text>
-                    <View style={styles.instructionItem}>
-                        <Text style={styles.instructionText}>Place platforms in the game area</Text>
-                    </View>
-                    <View style={styles.instructionItem}>
-                        <Text style={styles.instructionText}>Launch the ball and watch it bounce</Text>
-                    </View>
-                    <View style={styles.instructionItem}>
-                        <Text style={styles.instructionText}>Guide the ball to the green goal!</Text>
-                    </View>
-                </View>
+
             </Animated.View>
 
             {/* Settings Modal */}
@@ -258,170 +252,144 @@ const styles = StyleSheet.create({
         opacity: 0.1,
     },
     bgCircle1: {
-        width: 300,
-        height: 300,
+        width: s(300),
+        height: s(300),
         backgroundColor: COLORS.ui.primary,
-        top: -100,
-        right: -100,
+        top: s(-100),
+        right: s(-100),
     },
     bgCircle2: {
-        width: 200,
-        height: 200,
+        width: s(200),
+        height: s(200),
         backgroundColor: COLORS.platform,
-        bottom: 100,
-        left: -80,
+        bottom: s(100),
+        left: s(-80),
     },
     bgCircle3: {
-        width: 150,
-        height: 150,
+        width: s(150),
+        height: s(150),
         backgroundColor: COLORS.goal,
-        bottom: -50,
-        right: 50,
+        bottom: s(-50),
+        right: s(50),
     },
     content: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: 30,
+        paddingHorizontal: s(30),
     },
     demoBall: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
+        width: s(60),
+        height: s(60),
+        borderRadius: s(30),
         backgroundColor: COLORS.ball,
-        marginBottom: 20,
+        marginBottom: s(20),
         shadowColor: COLORS.ball,
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.6,
-        shadowRadius: 15,
+        shadowRadius: s(15),
         justifyContent: 'center',
         alignItems: 'center',
     },
     ballHighlight: {
-        width: 20,
-        height: 20,
-        borderRadius: 10,
+        width: s(20),
+        height: s(20),
+        borderRadius: s(10),
         backgroundColor: 'rgba(255,255,255,0.4)',
         position: 'absolute',
-        top: 10,
-        left: 12,
+        top: s(10),
+        left: s(12),
     },
     title: {
-        fontSize: 52,
+        fontSize: s(52),
         fontWeight: 'bold',
         color: COLORS.ui.text,
-        letterSpacing: 2,
+        letterSpacing: s(2),
     },
     subtitle: {
-        fontSize: 52,
+        fontSize: s(52),
         fontWeight: '300',
         color: COLORS.ui.secondary,
-        marginTop: -10,
-        letterSpacing: 4,
+        marginTop: s(-10),
+        letterSpacing: s(4),
     },
     tagline: {
-        fontSize: 16,
+        fontSize: s(16),
         color: COLORS.ui.textDim,
-        marginTop: 10,
-        letterSpacing: 1,
+        marginTop: s(10),
+        letterSpacing: s(1),
     },
     demoPlatform: {
-        width: 100,
-        height: 18,
+        width: s(100),
+        height: s(18),
         backgroundColor: COLORS.platform,
-        borderRadius: 9,
-        marginTop: 30,
+        borderRadius: s(9),
+        marginTop: s(30),
         justifyContent: 'center',
         alignItems: 'center',
         shadowColor: COLORS.platform,
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: { width: 0, height: s(4) },
         shadowOpacity: 0.4,
-        shadowRadius: 8,
+        shadowRadius: s(8),
     },
     platformGrip: {
         flexDirection: 'row',
     },
     gripLine: {
-        width: 3,
-        height: 8,
+        width: s(3),
+        height: s(8),
         backgroundColor: 'rgba(255,255,255,0.4)',
-        borderRadius: 2,
+        borderRadius: s(2),
     },
     buttons: {
-        marginTop: 50,
+        marginTop: s(50),
         width: '100%',
     },
     playButton: {
         backgroundColor: COLORS.ui.primary,
-        paddingVertical: 18,
-        borderRadius: 30,
+        paddingVertical: s(18),
+        borderRadius: s(30),
         alignItems: 'center',
         shadowColor: COLORS.ui.primary,
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: { width: 0, height: s(4) },
         shadowOpacity: 0.4,
-        shadowRadius: 10,
+        shadowRadius: s(10),
     },
     playButtonText: {
         color: COLORS.ui.text,
-        fontSize: 20,
+        fontSize: s(20),
         fontWeight: 'bold',
-        letterSpacing: 1,
+        letterSpacing: s(1),
     },
     levelsButton: {
         backgroundColor: 'rgba(255,255,255,0.1)',
-        paddingVertical: 16,
-        borderRadius: 30,
+        paddingVertical: s(16),
+        borderRadius: s(30),
         alignItems: 'center',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.2)',
-        marginBottom: 10,
-        marginTop: 15,
+        marginBottom: s(12),
+        marginTop: s(12),
     },
     levelsButtonText: {
         color: COLORS.ui.text,
-        fontSize: 18,
-        letterSpacing: 1,
+        fontSize: s(18),
+        letterSpacing: s(1),
     },
     settingsButton: {
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        paddingVertical: 12,
-        borderRadius: 30,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        paddingVertical: s(16),
+        borderRadius: s(30),
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(255,255,255,0.2)',
     },
     settingsButtonText: {
-        color: COLORS.ui.textDim,
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    instructions: {
-        marginTop: 40,
-        width: '100%',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: 20,
-        padding: 20,
-    },
-    instructionTitle: {
         color: COLORS.ui.text,
-        fontSize: 16,
-        fontWeight: '600',
-        marginBottom: 15,
-        textAlign: 'center',
+        fontSize: s(18),
+        letterSpacing: s(1),
     },
-    instructionItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    instructionIcon: {
-        fontSize: 16,
-    },
-    instructionText: {
-        color: COLORS.ui.textDim,
-        fontSize: 14,
-        flex: 1,
-    },
+
     // Modal Styles
     modalCentered: {
         flex: 1,
@@ -432,8 +400,8 @@ const styles = StyleSheet.create({
     modalView: {
         width: '85%',
         backgroundColor: '#1e1e2e',
-        borderRadius: 20,
-        padding: 25,
+        borderRadius: s(20),
+        padding: s(25),
         alignItems: 'center',
         shadowColor: "#000",
         shadowOffset: {
@@ -447,45 +415,45 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.1)'
     },
     modalTitle: {
-        fontSize: 24,
+        fontSize: s(24),
         fontWeight: 'bold',
         color: '#fff',
-        marginBottom: 25,
+        marginBottom: s(25),
     },
     settingRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         width: '100%',
-        marginBottom: 20,
-        paddingBottom: 10,
+        marginBottom: s(20),
+        paddingBottom: s(10),
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(255,255,255,0.1)',
     },
     settingText: {
-        fontSize: 18,
+        fontSize: s(18),
         color: '#fff',
     },
     modalResetBtn: {
         backgroundColor: 'rgba(239, 68, 68, 0.2)',
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderRadius: 10,
+        paddingVertical: s(12),
+        paddingHorizontal: s(20),
+        borderRadius: s(10),
         width: '100%',
         alignItems: 'center',
-        marginBottom: 15,
+        marginBottom: s(15),
         borderWidth: 1,
         borderColor: 'rgba(239, 68, 68, 0.5)',
     },
     modalResetTxt: {
         color: '#ef4444',
-        fontSize: 16,
+        fontSize: s(16),
         fontWeight: 'bold',
     },
     closeBtn: {
         backgroundColor: COLORS.ui.primary,
-        borderRadius: 20,
-        padding: 10,
+        borderRadius: s(20),
+        padding: s(10),
         elevation: 2,
         width: '100%',
         alignItems: 'center',
