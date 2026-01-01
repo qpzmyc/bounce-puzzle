@@ -68,35 +68,40 @@ const world2Levels = [
     },
     {
         id: 204,
-        name: 'Reverse Loop',
-        balls: [{ x: 150, y: 375 }],
-        goal: { x: 120, y: 270, width: 40, height: 40 },
-        fans: [
-            { x: 20, y: 150, width: 40, height: 40, direction: 'right' },
-            { x: 20, y: 350, width: 40, height: 40, direction: 'right' },
-        ],
+        name: 'Ricochet',
+        balls: [{ x: 40, y: 50 }],
+        goal: { x: 230, y: 320, width: 30, height: 30 },
         walls: [
-            { x: 170, y: 70, width: 10, height: 140 },
-            { x: 170, y: 270, width: 10, height: 160 },
-            { x: 170, y: 450, width: 10, height: 120 },
-            { x: 150, y: 395, width: 40, height: 10 },
+            { x: 190, y: 260, width: 10, height: 120 }, // Right-side bumper
+            { x: 190, y: 375, width: 10, height: 50 }, // Right-side bumper
+            { x: 150, y: 300, width: 10, height: 200 }, // Left-side bumper
+            { x: 135, y: 90, width: 120, height: 10 }, // Top divider
+            { x: 230, y: 355, width: 80, height: 10 }, // Bottom divider
+            { x: 230, y: 315, width: 80, height: 10 }, // Bottom divider
+            { x: 265, y: 335, width: 10, height: 50 }, // Bottom divider
         ],
-        spikes: [],
-        platforms: { normal: 2, sticky: 5, super: 5 },
+        platforms: { normal: 0, sticky: 1, super: 3 }, // All super
+        spikes: [
+            { x: 80, y: 100, width: 110, height: 10, direction: 'down' },
+            { x: 145, y: 185, width: 10, height: 10, direction: 'up' },
+
+        ],
+        fans: [],
         noPlaceZones: [
-            { x: 85, y: 390, width: 160, height: 240 },
+            { x: 175, y: 310, width: 350, height: 140 },
+            { x: 175, y: 70, width: 350, height: 140 },
         ]
     },
     {
         id: 205,
-        name: 'The Drop',
-        balls: [{ x: 175, y: 50 }],
-        goal: { x: 175, y: 550, width: 30, height: 30 },
+        name: 'The Dropper',
+        balls: [{ x: 120, y: 50 }, { x: 230, y: 50 }],
+        goal: { x: 160, y: 470, width: 30, height: 30 },
         walls: [
-            { x: 100, y: 300, width: 10, height: 400 },
-            { x: 250, y: 300, width: 10, height: 400 },
+            { x: 50, y: 300, width: 10, height: 400 },
+            { x: 290, y: 300, width: 10, height: 400 },
         ],
-        platforms: { normal: 2, sticky: 0, super: 0 },
+        platforms: { normal: 0, sticky: 5, super: 0 },
         spikes: [],
         fans: [],
         noPlaceZones: []
@@ -261,15 +266,21 @@ const world2Levels = [
     },
     {
         id: 216,
-        name: 'Ricochet',
+        name: 'Around the Bend',
         balls: [{ x: 50, y: 50 }],
-        goal: { x: 300, y: 400, width: 30, height: 30 },
+        goal: { x: 280, y: 450, width: 40, height: 40 },
         walls: [
-            { x: 340, y: 200, width: 10, height: 200 }, // Right-side bumper
-            { x: 20, y: 300, width: 10, height: 200 }, // Left-side bumper
+            { x: 125, y: 150, width: 250, height: 10 },
+            { x: 125, y: 230, width: 250, height: 10 },
+            { x: 215, y: 190, width: 250, height: 10 },
+            { x: 215, y: 270, width: 250, height: 10 },
+            { x: 125, y: 310, width: 250, height: 10 },
         ],
-        platforms: { normal: 0, sticky: 0, super: 3 }, // All super
-        spikes: [],
+        platforms: { normal: 1, sticky: 0, super: 2 },
+        spikes: [
+            { x: 320, y: 0, width: 10, height: 110, direction: 'left' },
+
+        ],
         fans: [],
         noPlaceZones: []
     },
@@ -349,17 +360,24 @@ const world2Levels = [
     },
     {
         id: 222,
-        name: 'Around the Bend',
-        balls: [{ x: 50, y: 50 }],
-        goal: { x: 50, y: 300, width: 40, height: 40 },
-        walls: [
-            { x: 100, y: 150, width: 150, height: 10 },
-            { x: 200, y: 250, width: 250, height: 10 },
+        name: 'Reverse Loop',
+        balls: [{ x: 150, y: 375 }],
+        goal: { x: 120, y: 270, width: 40, height: 40 },
+        fans: [
+            { x: 20, y: 150, width: 40, height: 40, direction: 'right' },
+            { x: 20, y: 350, width: 40, height: 40, direction: 'right' },
         ],
-        platforms: { normal: 2, sticky: 2, super: 1 },
+        walls: [
+            { x: 170, y: 60, width: 10, height: 120 },
+            { x: 170, y: 270, width: 10, height: 160 },
+            { x: 170, y: 450, width: 10, height: 120 },
+            { x: 150, y: 395, width: 40, height: 10 },
+        ],
         spikes: [],
-        fans: [],
-        noPlaceZones: []
+        platforms: { normal: 0, sticky: 1, super: 3 },
+        noPlaceZones: [
+            { x: 100, y: 390, width: 190, height: 240 },
+        ]
     },
     {
         id: 223,

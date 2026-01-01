@@ -683,7 +683,7 @@ const GameScreen = ({ route, navigation }) => {
                         {/* Level Title Box */}
                         <View style={styles.titleBox}>
                             <Text style={styles.title} numberOfLines={1}>
-                                Level {level.id >= 200 ? level.id - 200 : level.id}: {level.name}
+                                Level {level.id >= 200 ? level.id - 200 : level.id >= 100 ? level.id - 100 : level.id}: {level.name}
                             </Text>
                         </View>
                         {/* Stars Box */}

@@ -8,7 +8,7 @@ const SOUND_FILES = {
     level_complete: require('../../assets/level_complete.mp3'),
 };
 
-const MAX_CONCURRENT = 5; // Reduced to 5 high-quality "warm" players
+const MAX_CONCURRENT = 4; // Reduced to 5 high-quality "warm" players
 const soundPools = {};
 let levelCompletePlayer = null;
 
