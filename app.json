@@ -36,7 +36,8 @@
           "androidAppId": "ca-app-pub-9298010065130394~6679897257",
           "iosAppId": "ca-app-pub-9298010065130394~6679897257"
         }
-      ]
+      ],
+      "expo-audio"
     ],
     "extra": {
       "eas": {

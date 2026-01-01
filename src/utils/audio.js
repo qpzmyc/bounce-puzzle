@@ -1,4 +1,5 @@
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import { Asset } from 'expo-asset';
 
 const SOUND_FILES = {
     normal: require('../../assets/bounce_normal.mp3'),
@@ -7,79 +8,143 @@ const SOUND_FILES = {
     level_complete: require('../../assets/level_complete.mp3'),
 };
 
-// Cache loaded sounds
-// Structure: { key: { pool: [Sound, Sound, ...], index: 0 } }
-const soundCache = {};
-let isSoundEnabled = true;
+const MAX_CONCURRENT = 5; // Reduced to 5 high-quality "warm" players
+const soundPools = {};
+let levelCompletePlayer = null;
 
-const POOL_SIZE = 5; // Number of overlapping sounds allowed per type
+let isSoundEnabled = true;
+let isLoaded = false;
+let isLoading = false;
 
 export const setSoundEnabled = (enabled) => {
     isSoundEnabled = enabled;
 };
 
-export const loadSounds = async () => {
+const createPlayer = (key) => {
     try {
-        await Audio.setAudioModeAsync({
-            playsInSilentModeIOS: true,
-            shouldDuckAndroid: true,
-            playThroughEarpieceAndroid: false,
-        });
-
-        // We attempt to load all sounds upfront
-        for (const [key, resource] of Object.entries(SOUND_FILES)) {
-            try {
-                // Determine if this sound needs a pool (FX) or single instance (Music/Long)
-                // For now, we pool everything for simplicity as they are all short FX
-                const pool = [];
-
-                let initialStatus = {};
-                if (key === 'sticky') initialStatus = { volume: 0.5 };
-                if (key === 'normal') initialStatus = { volume: 1.0 }; // Explicit Max Volume
-
-                for (let i = 0; i < POOL_SIZE; i++) {
-                    const { sound } = await Audio.Sound.createAsync(resource, initialStatus);
-                    pool.push(sound);
-                }
-
-                soundCache[key] = { pool, index: 0 };
-            } catch (error) {
-                console.warn(`Failed to preload sound: ${key}. Make sure the file exists in assets/.`, error);
-            }
-        }
-    } catch (e) {
-        console.warn("Audio system failed to initialize", e);
+        const resource = SOUND_FILES[key];
+        const player = createAudioPlayer(resource);
+        if (key === 'sticky') player.volume = 0.5;
+        if (key === 'normal') player.volume = 1.0;
+        return player;
+    } catch (error) {
+        console.warn(`Failed to create player for: ${key}`, error);
+        return null;
     }
 };
 
-export const playSound = async (type) => {
+const initializePool = (key) => {
+    if (soundPools[key]) return;
+    soundPools[key] = { players: [], currentIndex: 0 };
+    for (let i = 0; i < MAX_CONCURRENT; i++) {
+        const player = createPlayer(key);
+        if (player) soundPools[key].players.push(player);
+    }
+};
+
+export const loadSounds = async () => {
+    if (isLoaded || isLoading) return;
+    isLoading = true;
+    try {
+        // Pre-download assets
+        await Promise.all(Object.values(SOUND_FILES).map(res => Asset.fromModule(res).downloadAsync()));
+
+        await setAudioModeAsync({
+            playsInSilentMode: true,
+            staysActiveInBackground: false,
+            interruptionMode: 'doNotMix', // Changed back to doNotMix as it sometimes has better priority
+            shouldPlayInBackground: false,
+        });
+
+        initializePool('normal');
+        initializePool('sticky');
+        initializePool('super');
+        levelCompletePlayer = createPlayer('level_complete');
+
+        // WARM UP ALL PLAYERS
+        // Playing a tiny bit of silence/zero-volume on every player
+        // ensures the OS has pre-allocated the audio hardware for these instances.
+        const allPoolPlayers = Object.values(soundPools).flatMap(p => p.players);
+        if (levelCompletePlayer) allPoolPlayers.push(levelCompletePlayer);
+
+        for (const player of allPoolPlayers) {
+            const originalVolume = player.volume;
+            player.volume = 0;
+            player.play();
+            // We don't reset yet, we'll do it after a short delay
+        }
+
+        setTimeout(() => {
+            for (const player of allPoolPlayers) {
+                try {
+                    player.pause();
+                    // Determine which sound to reset to
+                    let soundKey = 'normal';
+                    if (player === levelCompletePlayer) soundKey = 'level_complete';
+                    else {
+                        for (const [key, pool] of Object.entries(soundPools)) {
+                            if (pool.players.includes(player)) { soundKey = key; break; }
+                        }
+                    }
+
+                    player.replace(SOUND_FILES[soundKey]);
+                    // Restore volume
+                    if (soundKey === 'sticky') player.volume = 0.5;
+                    else if (soundKey === 'normal' || soundKey === 'level_complete' || soundKey === 'super') player.volume = 1.0;
+                } catch (e) { }
+            }
+        }, 300);
+
+        isLoaded = true;
+    } catch (e) {
+        console.warn("Audio system failed to initialize", e);
+    } finally {
+        isLoading = false;
+    }
+};
+
+const getNextPlayer = (key) => {
+    const pool = soundPools[key];
+    if (!pool || pool.players.length === 0) return null;
+    const player = pool.players[pool.currentIndex];
+    pool.currentIndex = (pool.currentIndex + 1) % pool.players.length;
+    return player;
+};
+
+export const playSound = (type) => {
     if (!isSoundEnabled) return;
 
-    const cacheItem = soundCache[type];
-    if (cacheItem && cacheItem.pool.length > 0) {
-        try {
-            // Get current sound instance from pool
-            const sound = cacheItem.pool[cacheItem.index];
-
-            // Advance index for next time (Round Robin)
-            cacheItem.index = (cacheItem.index + 1) % cacheItem.pool.length;
-
-            // Play
-            await sound.playFromPositionAsync(0);
-        } catch (error) {
-            // Ignore replay errors
+    if (type === 'level_complete') {
+        if (levelCompletePlayer) {
+            levelCompletePlayer.play();
+            setTimeout(() => {
+                try { levelCompletePlayer.replace(SOUND_FILES.level_complete); } catch (e) { }
+            }, 2000);
         }
+        return;
+    }
+
+    const player = getNextPlayer(type);
+    if (player) {
+        try {
+            player.play();
+            // Background reset
+            setTimeout(() => {
+                try { player.replace(SOUND_FILES[type]); } catch (e) { }
+            }, 500);
+        } catch (error) { }
     }
 };
 
 export const unloadSounds = async () => {
-    for (const cacheItem of Object.values(soundCache)) {
-        if (cacheItem && cacheItem.pool) {
-            for (const sound of cacheItem.pool) {
-                try {
-                    await sound.unloadAsync();
-                } catch (e) { }
-            }
+    for (const pool of Object.values(soundPools)) {
+        for (const player of pool.players) {
+            try { player.release(); } catch (e) { }
         }
     }
+    if (levelCompletePlayer) {
+        try { levelCompletePlayer.release(); } catch (e) { }
+        levelCompletePlayer = null;
+    }
+    for (const key of Object.keys(soundPools)) delete soundPools[key];
 };
