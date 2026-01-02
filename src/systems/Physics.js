@@ -162,6 +162,8 @@ const Physics = (entities, { time, dispatch }) => {
                     Matter.World.remove(engine.world, ball.body);
                     delete entities[ball.key]; // Mutate entities
                     ballsCollected++;
+                    // Dispatch individual goal event for particles
+                    dispatch({ type: 'ball-in-goal', position: { x: gX + gW / 2, y: gY + gH / 2 } });
                 }
             }
 

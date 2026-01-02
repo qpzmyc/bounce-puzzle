@@ -14,7 +14,8 @@ import { COLORS } from '../utils/constants';
 import { getLevelProgress, clearProgress, getSettings, saveSettings, unlockAllLevels } from '../utils/storage'; // Added unlockAllLevels
 import { getNextLevelOrRedirect } from '../utils/gameLogic';
 import levels from '../levels'; // This is likely world1Levels
-import world2Levels from '../levels/world2'; // Added for unlock all
+import world2Levels from '../levels/world2';
+import world3Levels from '../levels/world3';
 import { setSoundEnabled } from '../utils/audio';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -88,7 +89,23 @@ const MenuScreen = ({ navigation }) => {
     };
 
     const handleQuickPlay = () => {
-        const { levelId, locked, redirect, message } = getNextLevelOrRedirect(levels, progress);
+        // Determine the "furthest" unlocked world
+        const lastLevelW1 = levels[levels.length - 1];
+        const lastLevelW2 = world2Levels[world2Levels.length - 1];
+        const isWorld2Unlocked = !!progress[lastLevelW1.id]?.completed;
+        const isWorld3Unlocked = !!progress[lastLevelW2.id]?.completed;
+
+        // Prioritize furthest unlocked world
+        let activeLevels;
+        if (isWorld3Unlocked) {
+            activeLevels = world3Levels;
+        } else if (isWorld2Unlocked) {
+            activeLevels = world2Levels;
+        } else {
+            activeLevels = levels;
+        }
+
+        const { levelId, locked, redirect, message } = getNextLevelOrRedirect(activeLevels, progress);
 
         if (redirect && message) {
             Alert.alert("Locked", message, [
@@ -136,8 +153,7 @@ const MenuScreen = ({ navigation }) => {
                     text: "Unlock Everything",
                     style: "default",
                     onPress: async () => {
-                        // Assuming 'levels' is world1Levels
-                        const allLevels = [...levels, ...world2Levels];
+                        const allLevels = [...levels, ...world2Levels, ...world3Levels];
                         await unlockAllLevels(allLevels);
                         // Refresh progress after unlocking
                         getLevelProgress().then(setProgress);

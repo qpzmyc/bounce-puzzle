@@ -12,10 +12,12 @@ import Wall from '../components/Wall';
 import Fan from '../components/Fan';
 import Spike from '../components/Spike';
 import BallTrail from '../components/BallTrail';
+import ParticleSystem from '../components/ParticleSystem';
 import Physics from '../systems/Physics';
 import { COLORS, PHYSICS, GAME, PLATFORM_TYPES } from '../utils/constants';
 import levels from '../levels';
-import world2Levels from '../levels/world2'; // Added World 2 import
+import world2Levels from '../levels/world2';
+import world3Levels from '../levels/world3';
 import { saveLevelProgress, getLevelProgress, getSettings } from '../utils/storage';
 import { getTotalStars, getNextLevelOrRedirect } from '../utils/gameLogic';
 import * as Haptics from 'expo-haptics';
@@ -137,12 +139,11 @@ const GameScreen = ({ route, navigation }) => {
 
     const isFocused = useIsFocused();
     const levelId = route?.params?.levelId || 1;
-    const allLevels = [...levels, ...world2Levels]; // Combine all worlds
+    const allLevels = [...levels, ...world2Levels, ...world3Levels]; // Combine all worlds
     const level = allLevels.find(l => l.id === levelId) || levels[0];
 
-    // Determine World ID based on Level ID (Simple logic: < 200 is W1, >= 200 is W2)
-    // Or better, check which array it came from, but ID range is reliable here.
-    const currentWorldId = levelId >= 200 ? 2 : 1;
+    // Determine World ID based on Level ID
+    const currentWorldId = levelId >= 300 ? 3 : levelId >= 200 ? 2 : 1;
 
     const insets = useSafeAreaInsets();
     // CALC DYNAMIC SCALE: How much space is left for the game area?
@@ -161,6 +162,13 @@ const GameScreen = ({ route, navigation }) => {
     const [liveTrail, setLiveTrail] = useState([]);  // Trail during current attempt
     const [draggingPlatform, setDraggingPlatform] = useState(null);  // { type, gameX, gameY } for ghost preview
     const [settings, setSettings] = useState({ haptics: true, sound: true });
+    const [showTutorial, setShowTutorial] = useState(false);
+
+    useEffect(() => {
+        if (levelId === 101) {
+            setShowTutorial(true);
+        }
+    }, [levelId]);
 
     useEffect(() => {
         getSettings().then(s => {
@@ -170,6 +178,7 @@ const GameScreen = ({ route, navigation }) => {
     }, []);
 
     const gameEngineRef = useRef(null);
+    const particleSystemRef = useRef(null);
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
     const gameAreaRef = useRef(null);  // Ref to track game area position
@@ -182,6 +191,15 @@ const GameScreen = ({ route, navigation }) => {
     const calculateStars = () => {
         const unused = getTotalPlatforms() - placedPlatforms.length;
         return unused >= 2 ? 3 : unused >= 1 ? 2 : 1;
+    };
+
+    // Theme Logic
+    const isWorld2 = levelId >= 200 && levelId < 300;
+    const isWorld3 = levelId >= 300;
+    const THEME = {
+        wall: isWorld3 ? '#3b82f6' : (isWorld2 ? '#f97316' : COLORS.wall), // Blue (W3) / Orange (W2)
+        spike: isWorld3 ? '#a855f7' : (isWorld2 ? '#ef4444' : COLORS.spike), // Purple (W3) / Red (W2)
+        fan: isWorld3 ? '#60a5fa' : (isWorld2 ? '#eab308' : COLORS.fan), // Light Blue (W3) / Yellow (W2)
     };
 
     // Build physics entities
@@ -367,12 +385,10 @@ const GameScreen = ({ route, navigation }) => {
 
     useEffect(() => { setPlacedPlatforms([]); setGameState('setup'); setStars(0); setLastTrail([]); setLiveTrail([]); }, [levelId]);
 
-    const isWorld2 = levelId >= 200;
-    const THEME = {
-        wall: isWorld2 ? '#f97316' : COLORS.wall, // Orange for World 2
-        spike: isWorld2 ? '#ef4444' : COLORS.spike, // Red for World 2
-        fan: isWorld2 ? '#eab308' : COLORS.fan, // Yellow for World 2
-    };
+    useEffect(() => { setPlacedPlatforms([]); setGameState('setup'); setStars(0); setLastTrail([]); setLiveTrail([]); }, [levelId]);
+
+    // Theme logic moved up
+    // console.log(`[GameScreen] Level: ${levelId}...`);
 
     // console.log(`[GameScreen] Level: ${levelId}...`);
 
@@ -443,6 +459,19 @@ const GameScreen = ({ route, navigation }) => {
     const handleNext = async () => {
         setLastTrail([]);  // Clear trail when moving to next level
         setLiveTrail([]);
+
+        // Special transition: Level 123 -> 201
+        if (levelId === 123) {
+            navigation.navigate('Game', { levelId: 201 });
+            return;
+        }
+
+        // Special transition: Level 223 -> 301
+        if (levelId === 223) {
+            navigation.navigate('Game', { levelId: 301 });
+            return;
+        }
+
         const nextLevel = allLevels.find(l => l.id === levelId + 1);
 
         if (!nextLevel) {
@@ -486,7 +515,24 @@ const GameScreen = ({ route, navigation }) => {
             if (entities?.trail?.points) {
                 setLastTrail([...entities.trail.points]);
             }
+            // Trigger Particles based on result
+            if (e.result === 'win') {
+                // Burst at goal position (approximate center of goal)
+                // const goal = level.goal;
+                // particleSystemRef.current?.emit(goal.x, goal.y, '#fbbf24', 20); // Gold burst
+                // particleSystemRef.current?.emit(goal.x, goal.y, '#10b981', 20); // Green burst
+            } else {
+                // ... spike logic (placeholder) ...
+            }
+
             setGameState(e.result);
+        } else if (e.type === 'ball-in-goal') {
+            // Trigger particle burst for EACH ball entering the goal
+            const { x, y } = e.position;
+            particleSystemRef.current?.emit(x, y, '#fbbf24', 15); // Gold
+            particleSystemRef.current?.emit(x, y, '#10b981', 15); // Green
+            if (settings.haptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            playSound('sticky'); // Or a specific goal sound? using sticky/pop for now
         }
     };
 
@@ -683,7 +729,7 @@ const GameScreen = ({ route, navigation }) => {
                         {/* Level Title Box */}
                         <View style={styles.titleBox}>
                             <Text style={styles.title} numberOfLines={1}>
-                                Level {level.id >= 200 ? level.id - 200 : level.id >= 100 ? level.id - 100 : level.id}: {level.name}
+                                Level {level.id >= 300 ? level.id - 300 : level.id >= 200 ? level.id - 200 : level.id >= 100 ? level.id - 100 : level.id}: {level.name}
                             </Text>
                         </View>
                         {/* Stars Box */}
@@ -778,33 +824,57 @@ const GameScreen = ({ route, navigation }) => {
                                     top: z.y - z.height / 2,
                                     width: z.width,
                                     height: z.height,
-                                    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                    borderColor: 'rgba(239, 68, 68, 0.3)',
                                     borderWidth: 1,
-                                    borderColor: 'rgba(239, 68, 68, 0.5)',
                                     borderStyle: 'dashed',
+                                    zIndex: 0
                                 }}
                             />
                         ))}
-                    </View>
 
-                    {(gameState === 'win' || gameState === 'lose') && (
-                        <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
-                            <View style={[styles.overlayBox, gameState === 'win' ? styles.winBox : styles.loseBox]}>
-                                {gameState === 'win' ? <><Text style={styles.overlayTxt}>🎉 Complete!</Text><Stars count={stars} size={26} /></> : <Text style={styles.overlayTxt}>💥 Try Again</Text>}
-                                <View style={{ flexDirection: 'row', marginTop: 12 }}>
-                                    {gameState === 'win' && <TouchableOpacity style={styles.nextBtn} onPress={handleNext}><Text style={styles.btnTxt}>Next →</Text></TouchableOpacity>}
-                                    <TouchableOpacity style={styles.retryBtn} onPress={handleRetry}><Text style={styles.btnTxt}>Retry</Text></TouchableOpacity>
-                                </View>
-                            </View>
-                        </Animated.View>
-                    )}
+                        <ParticleSystem ref={particleSystemRef} />
+
+                    </View>
                 </View>
+
+                {/* 3. Level Complete / Overlay */}
+                {(gameState === 'win' || gameState === 'lose') && (
+                    <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
+                        <View style={[styles.overlayBox, gameState === 'win' ? styles.winBox : styles.loseBox]}>
+                            {gameState === 'win' ? <><Text style={styles.overlayTxt}>🎉 Complete!</Text><Stars count={stars} size={26} /></> : <Text style={styles.overlayTxt}>💥 Try Again</Text>}
+                            <View style={{ flexDirection: 'row', marginTop: 12 }}>
+                                <TouchableOpacity style={[styles.retryBtn, { marginRight: 10 }]} onPress={handleRetry}><Text style={styles.btnTxt}>Retry</Text></TouchableOpacity>
+                                {gameState === 'win' && <TouchableOpacity style={[styles.nextBtn, { marginRight: 0 }]} onPress={handleNext}><Text style={styles.btnTxt}>Next →</Text></TouchableOpacity>}
+                            </View>
+                        </View>
+                    </Animated.View>
+                )}
+
+                {/* Tutorial Popup */}
+                {showTutorial && (
+                    <View style={[styles.overlay, { zIndex: 9999 }]}>
+                        <View style={[styles.overlayBox, { backgroundColor: '#16213e', borderColor: '#3b82f6', borderWidth: 2, maxWidth: 300 }]}>
+                            <Text style={{ color: '#fff', fontSize: 22, fontWeight: 'bold', marginBottom: 12 }}>How to Play</Text>
+                            <Text style={{ color: '#e0e0e0', fontSize: 16, textAlign: 'center', marginBottom: 20, lineHeight: 22 }}>
+                                Drag platforms from the top bar to guide the ball to the green goal.
+                                {'\n\n'}
+                                Click drop and see what happens!
+                            </Text>
+                            <TouchableOpacity
+                                style={{ backgroundColor: '#3b82f6', paddingHorizontal: 30, paddingVertical: 12, borderRadius: 25 }}
+                                onPress={() => setShowTutorial(false)}
+                            >
+                                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Got it!</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
             </View>
 
             {/* 3. Footer Area */}
             <View style={[styles.footer, { paddingBottom: insets.bottom + s(8), height: insets.bottom + footerReserved }]}>
-
-                {/* Banner Ad Area (Hidden if no ad space, but reserved via footerReserved) */}
+                {/* Banner Ad Area */}
                 <View style={{ width: '100%', alignItems: 'center', backgroundColor: 'transparent', marginTop: s(4) }}>
                     <BannerAd unitId={adUnitID} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} />
                 </View>
@@ -819,6 +889,17 @@ const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones }) => {
     // Match Physics Body W/H
     const W = PHYSICS.platformWidth;
     const H = PHYSICS.platformHeight;
+
+    // Calculate bounding box half-extents for a rotated rectangle
+    // Returns { halfW, halfH } - the half-width and half-height of the axis-aligned bounding box
+    const getRotatedBounds = (angle) => {
+        const cosA = Math.abs(Math.cos(angle));
+        const sinA = Math.abs(Math.sin(angle));
+        return {
+            halfW: (W * cosA + H * sinA) / 2,
+            halfH: (W * sinA + H * cosA) / 2
+        };
+    };
 
     // Layout: Handle(40) + Gap(5) + Body(70) + Gap(5) + Handle(40) = 160 Total Width
     const TOTAL_W = 160;
@@ -912,9 +993,12 @@ const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones }) => {
                 let targetX = gamePos.gameX - (pRef.current.dragOffsetX || 0);
                 let targetY = gamePos.gameY - (pRef.current.dragOffsetY || 0);
 
-                // Bound
-                targetX = Math.max(W / 2, Math.min(GAME.width - W / 2, targetX));
-                targetY = Math.max(H / 2, Math.min(GAME.height - H / 2, targetY));
+                // Calculate rotation-aware bounds
+                const { halfW, halfH } = getRotatedBounds(angleRef.current);
+
+                // Bound using rotated bounding box
+                targetX = Math.max(halfW, Math.min(GAME.width - halfW, targetX));
+                targetY = Math.max(halfH, Math.min(GAME.height - halfH, targetY));
 
                 // 1. Widgets follow finger directly (no LERP)
                 widgetPan.setValue({ x: targetX, y: targetY });
@@ -1194,7 +1278,7 @@ const styles = StyleSheet.create({
     headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: s(6) },
     backBtn: { width: s(32), height: s(32), borderRadius: s(16), backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
     icon: { color: '#fff', fontSize: s(18) },
-    title: { color: '#fff', fontSize: s(12), fontWeight: '600' },
+    title: { color: '#fff', fontSize: s(12), fontWeight: '600', textAlign: 'center' },
     retryHeaderBtn: { width: s(32), height: s(32), borderRadius: s(16), backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
     retryIcon: { color: '#fff', fontSize: s(20) },
     infoBox: {
@@ -1204,19 +1288,20 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingHorizontal: s(8),
     },
-    dropBtn: { backgroundColor: '#7F00FF', paddingHorizontal: s(20), paddingVertical: s(6), borderRadius: s(8) },
+    dropBtn: { backgroundColor: '#7F00FF', paddingHorizontal: s(12), paddingVertical: s(6), borderRadius: s(8) },
     dropTxt: { color: '#fff', fontWeight: 'bold', fontSize: s(14) },
     titleBox: {
-        width: s(200),
+        width: s(216),
         height: s(28),
         backgroundColor: 'rgba(255,255,255,0.1)',
         borderRadius: s(6),
         justifyContent: 'center',
+        alignItems: 'center',
         paddingHorizontal: s(8),
         marginRight: s(6),
     },
     starsBox: {
-        width: s(80),
+        width: s(64),
         height: s(28),
         backgroundColor: 'rgba(255,255,255,0.1)',
         borderRadius: s(6),
@@ -1224,7 +1309,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     bankBox: {
-        width: s(200),
+        width: s(216),
         height: s(28),
         backgroundColor: 'rgba(255,255,255,0.1)',
         borderRadius: s(8),

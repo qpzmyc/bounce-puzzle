@@ -190,9 +190,9 @@ const levels = [
             { x: 292, y: 450, width: 40, height: 40, direction: 'up' },
         ],
         spikes: [
-            { x: 0, y: 270, width: 60, height: 10, direction: 'down' },
-            { x: 110, y: 270, width: 270, height: 10, direction: 'down' },
-            { x: 0, y: 0, width: 350, height: 10, direction: 'down' },
+            { x: 5, y: 270, width: 55, height: 10, direction: 'down' },
+            { x: 110, y: 270, width: 225, height: 10, direction: 'down' },
+            { x: 0, y: 0, width: 340, height: 10, direction: 'down' },
             { x: 165, y: 5, width: 10, height: 160, direction: 'right' },
             { x: 205, y: 5, width: 10, height: 160, direction: 'left' },
 
@@ -248,18 +248,18 @@ const levels = [
         id: 113,
         name: "Precision",
         balls: [{ x: 300, y: 50 }],
-        goal: { x: 290, y: 265, width: 40, height: 40 },
+        goal: { x: 290, y: 265, width: 30, height: 30 },
         walls: [
             { x: 230, y: 250, width: 220, height: 10 }, // Ceiling
-            { x: 230, y: 320, width: 220, height: 10 }, // Floor (Raised 350->330)
+            { x: 230, y: 310, width: 220, height: 10 }, // Floor (Raised 350->330)
         ],
         platforms: { normal: 3, sticky: 2, super: 0 },
         fans: [
-            { x: 10, y: 250, width: 40, height: 40, direction: 'right' } // Moved Up/Left (50,300 -> 30,250)
+            { x: 10, y: 260, width: 40, height: 40, direction: 'right' } // Moved Up/Left (50,300 -> 30,250)
         ],
         spikes: [
             { x: 120, y: 260, width: 230, height: 10, direction: 'down' }, // Ceiling spikes
-            { x: 120, y: 300, width: 230, height: 10, direction: 'up' }, // Floor spikes (Raised)
+            { x: 120, y: 290, width: 230, height: 10, direction: 'up' }, // Floor spikes (Raised)
             { x: 120, y: 230, width: 230, height: 10, direction: 'up' }, // Ceiling spikes
 
         ],
@@ -295,7 +295,7 @@ const levels = [
     // 15. Bunker
     {
         id: 115,
-        name: "Double Dunk",
+        name: "Two Points",
         balls: [{ x: 50, y: 110 }, { x: 100, y: 230 }], // Start low left
         goal: { x: 290, y: 400, width: 40, height: 40 }, // In box bottom right
         walls: [
@@ -355,10 +355,10 @@ const levels = [
         platforms: { normal: 1, sticky: 2, super: 2 }, // Chain super jumps
         fans: [],
         spikes: [
-            { x: 0, y: 120, width: 100, height: 10, direction: 'up' },
-            { x: 150, y: 120, width: 200, height: 10, direction: 'up' },
-            { x: 300, y: 230, width: 50, height: 10, direction: 'up' },
-            { x: 0, y: 230, width: 250, height: 10, direction: 'up' },
+            { x: 5, y: 120, width: 95, height: 10, direction: 'up' },
+            { x: 150, y: 120, width: 185, height: 10, direction: 'up' },
+            { x: 300, y: 230, width: 35, height: 10, direction: 'up' },
+            { x: 5, y: 230, width: 245, height: 10, direction: 'up' },
             { x: 120, y: 310, width: 100, height: 10, direction: 'up' },
         ],
         noPlaceZones: [
@@ -412,15 +412,15 @@ const levels = [
         goal: { x: 270, y: 420, width: 40, height: 40 },
         walls: [
             { x: 280, y: 400, width: 120, height: 10 },
-            { x: 75, y: 270, width: 150, height: 10 },
-            { x: 275, y: 270, width: 150, height: 10 },
+            { x: 70, y: 270, width: 140, height: 10 },
+            { x: 270, y: 270, width: 140, height: 10 },
 
         ],
         platforms: { normal: 6, sticky: 3, super: 1 }, // TONS of platforms
         fans: [],
         spikes: [
-            { x: 0, y: 250, width: 150, height: 10, direction: 'up' },
-            { x: 200, y: 250, width: 150, height: 10, direction: 'up' },
+            { x: 5, y: 250, width: 135, height: 10, direction: 'up' },
+            { x: 200, y: 250, width: 135, height: 10, direction: 'up' },
             { x: 220, y: 380, width: 115, height: 10, direction: 'up' },
         ],
         noPlaceZones: [
@@ -431,7 +431,7 @@ const levels = [
     // 20. Mastermind
     {
         id: 120,
-        name: "Mastermind",
+        name: "Two Paths",
         balls: [{ x: 80, y: 150 }, { x: 60, y: 450 }],
         goal: { x: 185, y: 50, width: 40, height: 40 }, // Top right
         walls: [

@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bounce Puzzle Level Editor</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: #16213e;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            border-bottom: 1px solid #0f3460;
+        }
+
+        header h1 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+        }
+
+        .toolbar button {
+            padding: 6px 12px;
+            border: 1px solid #0f3460;
+            background: #16213e;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .toolbar button:hover {
+            background: #0f3460;
+        }
+
+        .toolbar button.active {
+            background: #e94560;
+            border-color: #e94560;
+        }
+
+        .toolbar button.mode-select.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+
+        .toolbar button.mode-delete.active {
+            background: #ef4444;
+            border-color: #ef4444;
+        }
+
+        .toolbar .separator {
+            width: 1px;
+            background: #0f3460;
+            margin: 0 4px;
+        }
+
+        .toolbar button.clear-btn {
+            background: #374151;
+            border-color: #374151;
+        }
+
+        .toolbar button.clear-btn:hover {
+            background: #4b5563;
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .canvas-panel {
+            flex: 0 0 400px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #16213e;
+        }
+
+        #canvas {
+            background: #0a0a18;
+            border: 2px solid #0f3460;
+            cursor: crosshair;
+        }
+
+        .canvas-info {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .code-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 10px;
+        }
+
+        .inputs-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .input-group label {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+        }
+
+        .input-group input {
+            padding: 6px 10px;
+            border: 1px solid #0f3460;
+            background: #1a1a2e;
+            color: #fff;
+            border-radius: 4px;
+            width: 80px;
+        }
+
+        .input-group input.wide {
+            width: 150px;
+        }
+
+        #codeOutput {
+            flex: 1;
+            background: #0a0a18;
+            border: 1px solid #0f3460;
+            border-radius: 4px;
+            padding: 12px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 12px;
+            color: #a8e6cf;
+            resize: none;
+            overflow: auto;
+        }
+
+        .copy-btn {
+            align-self: flex-end;
+            padding: 8px 16px;
+            background: #e94560;
+            border: none;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .copy-btn:hover {
+            background: #ff6b6b;
+        }
+
+        .selected-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: #0f3460;
+            border-radius: 4px;
+            font-size: 12px;
+            min-height: 60px;
+        }
+
+        .delete-btn {
+            margin-top: 8px;
+            padding: 4px 10px;
+            background: #e94560;
+            border: none;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .dupe-btn {
+            margin-top: 8px;
+            margin-left: 4px;
+            padding: 4px 10px;
+            background: #3b82f6;
+            border: none;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Level Editor</h1>
+        <div class="toolbar">
+            <button data-tool="select" class="mode-select">Select</button>
+            <button data-tool="delete" class="mode-delete">Delete</button>
+            <div class="separator"></div>
+            <button data-tool="goal" class="active">Goal</button>
+            <button data-tool="wall">Wall</button>
+            <button data-tool="spike">Spike</button>
+            <button data-tool="fan">Fan</button>
+            <button data-tool="ball">Ball</button>
+            <button data-tool="noPlaceZone">NoPlace</button>
+            <div class="separator"></div>
+            <button class="clear-btn" id="clearBtn">Clear All</button>
+        </div>
+    </header>
+    <div class="main">
+        <div class="canvas-panel">
+            <canvas id="canvas" width="350" height="510"></canvas>
+            <div class="canvas-info">Click to place • Drag to move • Drag edges to resize • Delete key to remove</div>
+            <div class="selected-info" id="selectedInfo">No object selected</div>
+        </div>
+        <div class="code-panel">
+            <div class="inputs-row">
+                <div class="input-group">
+                    <label>Level ID</label>
+                    <input type="number" id="levelId" value="201">
+                </div>
+                <div class="input-group">
+                    <label>Name</label>
+                    <input type="text" id="levelName" value="New Level" class="wide">
+                </div>
+                <div class="input-group">
+                    <label>Normal</label>
+                    <input type="number" id="platformNormal" value="3">
+                </div>
+                <div class="input-group">
+                    <label>Sticky</label>
+                    <input type="number" id="platformSticky" value="0">
+                </div>
+                <div class="input-group">
+                    <label>Super</label>
+                    <input type="number" id="platformSuper" value="0">
+                </div>
+            </div>
+            <textarea id="codeOutput" readonly></textarea>
+            <button class="copy-btn" id="copyBtn">Copy to Clipboard</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const codeOutput = document.getElementById('codeOutput');
+        const selectedInfo = document.getElementById('selectedInfo');
+
+        // Level data
+        let objects = {
+            goal: null,
+            balls: [],
+            walls: [],
+            spikes: [],
+            fans: [],
+            noPlaceZones: []
+        };
+
+        let currentTool = 'goal';
+        let selectedObject = null;
+        let dragMode = null; // 'move', 'resize-*'
+        let dragStart = { x: 0, y: 0 };
+        let dragObjStart = {};
+
+        // Default sizes
+        const DEFAULTS = {
+            goal: { width: 40, height: 40 },
+            wall: { width: 100, height: 10 },
+            spike: { width: 80, height: 10, direction: 'up' },
+            fan: { width: 40, height: 40, direction: 'right' },
+            ball: { radius: 8 },
+            noPlaceZone: { width: 100, height: 100 }
+        };
+
+        // Colors
+        const COLORS = {
+            goal: '#22c55e',
+            wall: '#64748b',
+            spike: '#ef4444',
+            fan: '#3b82f6',
+            ball: '#facc15',
+            noPlaceZone: 'rgba(239, 68, 68, 0.3)'
+        };
+
+        // Toolbar
+        document.querySelectorAll('.toolbar button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.toolbar button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentTool = btn.dataset.tool;
+                selectedObject = null;
+                render();
+            });
+        });
+
+        // Input changes
+        document.querySelectorAll('.inputs-row input').forEach(input => {
+            input.addEventListener('input', generateCode);
+        });
+
+        // Copy button
+        document.getElementById('copyBtn').addEventListener('click', () => {
+            navigator.clipboard.writeText(codeOutput.value);
+            document.getElementById('copyBtn').textContent = 'Copied!';
+            setTimeout(() => document.getElementById('copyBtn').textContent = 'Copy to Clipboard', 1500);
+        });
+
+        // Clear button
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            if (confirm('Clear all objects from the level?')) {
+                objects = { goal: null, balls: [], walls: [], spikes: [], fans: [], noPlaceZones: [] };
+                selectedObject = null;
+                render();
+                generateCode();
+            }
+        });
+
+        // Canvas events
+        canvas.addEventListener('mousedown', onMouseDown);
+        canvas.addEventListener('mousemove', onMouseMove);
+        canvas.addEventListener('mouseup', onMouseUp);
+        canvas.addEventListener('mouseleave', onMouseUp);
+        document.addEventListener('keydown', onKeyDown);
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: Math.round(e.clientX - rect.left),
+                y: Math.round(e.clientY - rect.top)
+            };
+        }
+
+        function hitTest(x, y) {
+            // Check all objects in reverse order (top to bottom visually)
+            const allObjects = [
+                ...objects.noPlaceZones.map((o, i) => ({ type: 'noPlaceZone', obj: o, index: i })),
+                ...objects.fans.map((o, i) => ({ type: 'fan', obj: o, index: i })),
+                ...objects.spikes.map((o, i) => ({ type: 'spike', obj: o, index: i })),
+                ...objects.walls.map((o, i) => ({ type: 'wall', obj: o, index: i })),
+                ...objects.balls.map((o, i) => ({ type: 'ball', obj: o, index: i })),
+                objects.goal ? { type: 'goal', obj: objects.goal, index: 0 } : null
+            ].filter(Boolean).reverse();
+
+            for (const item of allObjects) {
+                const o = item.obj;
+                if (item.type === 'ball') {
+                    const dx = x - o.x;
+                    const dy = y - o.y;
+                    if (dx * dx + dy * dy <= 100) return item;
+                } else {
+                    const left = o.x - o.width / 2;
+                    const top = o.y - o.height / 2;
+                    if (x >= left && x <= left + o.width && y >= top && y <= top + o.height) {
+                        return item;
+                    }
+                }
+            }
+            return null;
+        }
+
+        function getResizeHandle(x, y, obj) {
+            if (!obj || obj.type === 'ball') return null;
+            const o = obj.obj;
+            const handleSize = 8;
+            const left = o.x - o.width / 2;
+            const top = o.y - o.height / 2;
+            const right = left + o.width;
+            const bottom = top + o.height;
+
+            if (Math.abs(x - right) < handleSize && Math.abs(y - bottom) < handleSize) return 'resize-br';
+            if (Math.abs(x - left) < handleSize && Math.abs(y - top) < handleSize) return 'resize-tl';
+            if (Math.abs(x - right) < handleSize && Math.abs(y - top) < handleSize) return 'resize-tr';
+            if (Math.abs(x - left) < handleSize && Math.abs(y - bottom) < handleSize) return 'resize-bl';
+            return null;
+        }
+
+        function onMouseDown(e) {
+            const pos = getMousePos(e);
+            const hit = hitTest(pos.x, pos.y);
+
+            // Delete mode: click to delete
+            if (currentTool === 'delete') {
+                if (hit) {
+                    const { type, index } = hit;
+                    if (type === 'goal') {
+                        objects.goal = null;
+                    } else {
+                        objects[type + 's'].splice(index, 1);
+                    }
+                    selectedObject = null;
+                    render();
+                    generateCode();
+                }
+                return;
+            }
+
+            if (hit) {
+                selectedObject = hit;
+                const handle = getResizeHandle(pos.x, pos.y, hit);
+                if (handle) {
+                    dragMode = handle;
+                } else {
+                    dragMode = 'move';
+                }
+                dragStart = pos;
+                dragObjStart = { ...hit.obj };
+            } else {
+                // Select mode: don't place new objects
+                if (currentTool === 'select') {
+                    selectedObject = null;
+                    dragMode = null;
+                } else {
+                    // Place new object
+                    placeObject(pos.x, pos.y);
+                    selectedObject = null;
+                    dragMode = null;
+                }
+            }
+            render();
+        }
+
+        function onMouseMove(e) {
+            const pos = getMousePos(e);
+
+            if (!dragMode || !selectedObject) {
+                // Update cursor
+                const hit = hitTest(pos.x, pos.y);
+                if (hit) {
+                    const handle = getResizeHandle(pos.x, pos.y, hit);
+                    if (handle) {
+                        canvas.style.cursor = handle.includes('tl') || handle.includes('br') ? 'nwse-resize' : 'nesw-resize';
+                    } else {
+                        canvas.style.cursor = 'move';
+                    }
+                } else {
+                    canvas.style.cursor = currentTool === 'delete' ? 'not-allowed' : (currentTool === 'select' ? 'default' : 'crosshair');
+                }
+                return;
+            }
+
+            const dx = pos.x - dragStart.x;
+            const dy = pos.y - dragStart.y;
+            const obj = selectedObject.obj;
+
+            if (dragMode === 'move') {
+                obj.x = snap(Math.max(0, Math.min(350, dragObjStart.x + dx)));
+                obj.y = snap(Math.max(0, Math.min(510, dragObjStart.y + dy)));
+            } else if (dragMode.startsWith('resize')) {
+                const minSize = 10;
+                if (dragMode === 'resize-br') {
+                    obj.width = snap(Math.max(minSize, dragObjStart.width + dx));
+                    obj.height = snap(Math.max(minSize, dragObjStart.height + dy));
+                } else if (dragMode === 'resize-tl') {
+                    const newW = snap(Math.max(minSize, dragObjStart.width - dx));
+                    const newH = snap(Math.max(minSize, dragObjStart.height - dy));
+                    obj.x = snap(dragObjStart.x + (dragObjStart.width - newW) / 2);
+                    obj.y = snap(dragObjStart.y + (dragObjStart.height - newH) / 2);
+                    obj.width = newW;
+                    obj.height = newH;
+                } else if (dragMode === 'resize-tr') {
+                    const newW = snap(Math.max(minSize, dragObjStart.width + dx));
+                    const newH = snap(Math.max(minSize, dragObjStart.height - dy));
+                    obj.y = snap(dragObjStart.y + (dragObjStart.height - newH) / 2);
+                    obj.width = newW;
+                    obj.height = newH;
+                } else if (dragMode === 'resize-bl') {
+                    const newW = snap(Math.max(minSize, dragObjStart.width - dx));
+                    const newH = snap(Math.max(minSize, dragObjStart.height + dy));
+                    obj.x = snap(dragObjStart.x + (dragObjStart.width - newW) / 2);
+                    obj.width = newW;
+                    obj.height = newH;
+                }
+            }
+
+            render();
+        }
+
+        function onMouseUp() {
+            dragMode = null;
+            generateCode();
+        }
+
+        // Snap to 5px grid
+        function snap(val) {
+            return Math.round(val / 5) * 5;
+        }
+
+        function onKeyDown(e) {
+            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedObject) {
+                deleteSelected();
+                e.preventDefault();
+            }
+        }
+
+        function deleteSelected() {
+            if (!selectedObject) return;
+            const { type, index } = selectedObject;
+            if (type === 'goal') {
+                objects.goal = null;
+            } else {
+                objects[type + 's'].splice(index, 1);
+            }
+            selectedObject = null;
+            render();
+            generateCode();
+        }
+
+        function duplicateSelected() {
+            if (!selectedObject) return;
+            const { type, obj } = selectedObject;
+            const offset = 20;
+            const newObj = { ...obj, x: snap(obj.x + offset), y: snap(obj.y + offset) };
+
+            if (type === 'goal') {
+                // Can't duplicate goal, there's only one
+                alert('Cannot duplicate goal - there can only be one!');
+                return;
+            } else if (type === 'ball') {
+                objects.balls.push({ x: newObj.x, y: newObj.y });
+                selectedObject = { type: 'ball', obj: objects.balls[objects.balls.length - 1], index: objects.balls.length - 1 };
+            } else {
+                const key = type + 's';
+                objects[key].push(newObj);
+                selectedObject = { type, obj: objects[key][objects[key].length - 1], index: objects[key].length - 1 };
+            }
+            render();
+            generateCode();
+        }
+
+        function placeObject(x, y) {
+            const sx = snap(x);
+            const sy = snap(y);
+            const def = DEFAULTS[currentTool];
+            const newObj = { x: sx, y: sy, ...def };
+
+            if (currentTool === 'goal') {
+                objects.goal = newObj;
+            } else if (currentTool === 'ball') {
+                objects.balls.push({ x: sx, y: sy });
+            } else {
+                const key = currentTool + 's';
+                if (!objects[key]) objects[key] = [];
+                objects[key].push(newObj);
+            }
+            generateCode();
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, 350, 510);
+
+            // Background grid
+            ctx.strokeStyle = '#1a1a2e';
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= 350; x += 10) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, 510);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= 510; y += 10) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(350, y);
+                ctx.stroke();
+            }
+
+            // Draw floor spikes indicator
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+            ctx.fillRect(0, 490, 350, 20);
+            ctx.fillStyle = '#ef4444';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Floor Spikes', 175, 503);
+
+            // Draw noPlaceZones
+            objects.noPlaceZones.forEach((o, i) => drawRect(o, 'noPlaceZone', i));
+
+            // Draw walls
+            objects.walls.forEach((o, i) => drawRect(o, 'wall', i));
+
+            // Draw spikes
+            objects.spikes.forEach((o, i) => drawRect(o, 'spike', i));
+
+            // Draw fans
+            objects.fans.forEach((o, i) => drawRect(o, 'fan', i));
+
+            // Draw goal
+            if (objects.goal) drawRect(objects.goal, 'goal', 0);
+
+            // Draw balls
+            objects.balls.forEach((o, i) => drawBall(o, i));
+
+            // Update selected info
+            if (selectedObject) {
+                const o = selectedObject.obj;
+                let info = `Type: ${selectedObject.type}`;
+                if (selectedObject.type === 'ball') {
+                    info += ` | x: ${Math.round(o.x)}, y: ${Math.round(o.y)}`;
+                } else {
+                    info += ` | x: ${Math.round(o.x)}, y: ${Math.round(o.y)}, w: ${Math.round(o.width)}, h: ${Math.round(o.height)}`;
+                    if (o.direction) info += `, dir: ${o.direction}`;
+                }
+                selectedInfo.innerHTML = info + '<br><button class="delete-btn" onclick="deleteSelected()">Delete</button><button class="dupe-btn" onclick="duplicateSelected()">Duplicate</button>';
+                if (selectedObject.type === 'spike' || selectedObject.type === 'fan') {
+                    selectedInfo.innerHTML += ` <select onchange="changeDirection(this.value)" style="margin-left:8px;padding:2px;">
+                        <option value="up" ${o.direction === 'up' ? 'selected' : ''}>Up</option>
+                        <option value="down" ${o.direction === 'down' ? 'selected' : ''}>Down</option>
+                        <option value="left" ${o.direction === 'left' ? 'selected' : ''}>Left</option>
+                        <option value="right" ${o.direction === 'right' ? 'selected' : ''}>Right</option>
+                    </select>`;
+                }
+            } else {
+                selectedInfo.textContent = 'No object selected';
+            }
+        }
+
+        function drawRect(o, type, index) {
+            const left = o.x - o.width / 2;
+            const top = o.y - o.height / 2;
+            ctx.fillStyle = COLORS[type];
+            ctx.fillRect(left, top, o.width, o.height);
+
+            // Selection highlight
+            if (selectedObject && selectedObject.type === type && selectedObject.index === index) {
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(left - 2, top - 2, o.width + 4, o.height + 4);
+                // Resize handles
+                ctx.fillStyle = '#fff';
+                const hs = 6;
+                ctx.fillRect(left - hs / 2, top - hs / 2, hs, hs);
+                ctx.fillRect(left + o.width - hs / 2, top - hs / 2, hs, hs);
+                ctx.fillRect(left - hs / 2, top + o.height - hs / 2, hs, hs);
+                ctx.fillRect(left + o.width - hs / 2, top + o.height - hs / 2, hs, hs);
+            }
+
+            // Direction arrow for spikes/fans
+            if ((type === 'spike' || type === 'fan') && o.direction) {
+                ctx.fillStyle = '#fff';
+                ctx.font = '14px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const arrows = { up: '↑', down: '↓', left: '←', right: '→' };
+                ctx.fillText(arrows[o.direction] || '', o.x, o.y);
+            }
+
+            // Label
+            if (type !== 'noPlaceZone') {
+                ctx.fillStyle = '#fff';
+                ctx.font = '10px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(type.charAt(0).toUpperCase(), o.x, o.y + (type === 'spike' || type === 'fan' ? 0 : 3));
+            }
+        }
+
+        function drawBall(o, index) {
+            ctx.beginPath();
+            ctx.arc(o.x, o.y, 8, 0, Math.PI * 2);
+            ctx.fillStyle = COLORS.ball;
+            ctx.fill();
+
+            if (selectedObject && selectedObject.type === 'ball' && selectedObject.index === index) {
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        window.changeDirection = function (dir) {
+            if (selectedObject && selectedObject.obj.direction !== undefined) {
+                selectedObject.obj.direction = dir;
+                render();
+                generateCode();
+            }
+        };
+
+        window.deleteSelected = deleteSelected;
+
+        function generateCode() {
+            const id = document.getElementById('levelId').value;
+            const name = document.getElementById('levelName').value;
+            const normal = document.getElementById('platformNormal').value;
+            const sticky = document.getElementById('platformSticky').value;
+            const superP = document.getElementById('platformSuper').value;
+
+            const formatObj = (o, keys) => {
+                const parts = keys.map(k => {
+                    if (typeof o[k] === 'string') return `${k}: '${o[k]}'`;
+                    return `${k}: ${Math.round(o[k])}`;
+                });
+                return `{ ${parts.join(', ')} }`;
+            };
+
+            const balls = objects.balls.map(b => formatObj(b, ['x', 'y'])).join(', ');
+            const goal = objects.goal ? formatObj(objects.goal, ['x', 'y', 'width', 'height']) : '{ x: 175, y: 400, width: 40, height: 40 }';
+            const walls = objects.walls.map(w => formatObj(w, ['x', 'y', 'width', 'height']));
+            const spikes = objects.spikes.map(s => formatObj(s, ['x', 'y', 'width', 'height', 'direction']));
+            const fans = objects.fans.map(f => formatObj(f, ['x', 'y', 'width', 'height', 'direction']));
+            const npz = objects.noPlaceZones.map(z => formatObj(z, ['x', 'y', 'width', 'height']));
+
+            const indent = '            ';
+            const formatArray = (arr) => arr.length === 0 ? '[]' : `[\n${indent}${arr.join(',\n' + indent)},\n        ]`;
+
+            const code = `    {
+        id: ${id},
+        name: '${name}',
+        balls: [${balls || '{ x: 175, y: 50 }'}],
+        goal: ${goal},
+        walls: ${formatArray(walls)},
+        platforms: { normal: ${normal}, sticky: ${sticky}, super: ${superP} },
+        spikes: ${formatArray(spikes)},
+        fans: ${formatArray(fans)},
+        noPlaceZones: ${formatArray(npz)}
+    },`;
+
+            codeOutput.value = code;
+        }
+
+        // Initial render
+        render();
+        generateCode();
+    </script>
+</body>
+
+</html>

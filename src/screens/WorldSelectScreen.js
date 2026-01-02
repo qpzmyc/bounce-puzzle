@@ -10,6 +10,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { getLevelProgress } from '../utils/storage';
 import world1Levels from '../levels';
+import world2Levels from '../levels/world2';
 import { COLORS } from '../utils/constants';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -23,15 +24,22 @@ const WORLDS = [
         id: 1,
         name: 'First World',
         subtitle: 'The Basics',
-        color: '#22aac5ff', // Green
+        color: '#22c52dff',
         icon: '1',
     },
     {
         id: 2,
         name: 'Fire World',
         subtitle: 'More Challenging',
-        color: '#f6665cff', // Purple
+        color: '#f6665cff',
         icon: '2',
+    },
+    {
+        id: 3,
+        name: 'Ice World',
+        subtitle: 'Coming Soon',
+        color: '#559ef7ff',
+        icon: '3',
     },
 ];
 
@@ -46,10 +54,17 @@ const WorldSelectScreen = ({ navigation }) => {
 
     const isWorldUnlocked = (worldId) => {
         if (worldId === 1) return true;
-        // Check if previous world is completed
-        // For World 2, check if last level of World 1 is completed
-        const lastLevelW1 = world1Levels[world1Levels.length - 1];
-        return !!progress[lastLevelW1.id]?.completed;
+        if (worldId === 2) {
+            // W2 unlocked if last level of W1 is completed
+            const lastLevelW1 = world1Levels[world1Levels.length - 1];
+            return !!progress[lastLevelW1.id]?.completed;
+        }
+        if (worldId === 3) {
+            // W3 unlocked if last level of W2 is completed
+            const lastLevelW2 = world2Levels[world2Levels.length - 1];
+            return !!progress[lastLevelW2.id]?.completed;
+        }
+        return false;
     };
 
     const handleWorldSelect = (worldId) => {

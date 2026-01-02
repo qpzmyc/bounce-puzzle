@@ -11,6 +11,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../utils/constants';
 import world1Levels from '../levels';
 import world2Levels from '../levels/world2';
+import world3Levels from '../levels/world3';
 import { getLevelProgress } from '../utils/storage';
 import { getNextLevelOrRedirect, getTotalStars } from '../utils/gameLogic';
 import { Alert } from 'react-native';
@@ -20,6 +21,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const WORLD_CONFIG = {
     1: { levels: world1Levels, title: 'World 1', color: '#22c55e' },
     2: { levels: world2Levels, title: 'World 2', color: '#8b5cf6' },
+    3: { levels: world3Levels, title: 'World 3', color: '#a855f7' },
 };
 
 const LevelSelectScreen = ({ route, navigation }) => {
@@ -67,16 +69,16 @@ const LevelSelectScreen = ({ route, navigation }) => {
 
     const getCardColor = (status) => {
         switch (status) {
-            case 'next': return 'rgba(34, 197, 94, 0.2)'; // Green tint
-            case 'completed': return 'rgba(139, 92, 246, 0.2)'; // Purple tint
+            case 'next': return 'rgba(139, 92, 246, 0.2)'; // Purple tint (Next)
+            case 'completed': return 'rgba(34, 197, 94, 0.2)'; // Green tint (Completed)
             case 'locked': default: return 'rgba(255,255,255,0.05)'; // Grey/Default
         }
     };
 
     const getIconBg = (status) => {
         switch (status) {
-            case 'next': return '#22c55e'; // Green
-            case 'completed': return '#8b5cf6'; // Purple
+            case 'next': return '#8b5cf6'; // Purple (Next)
+            case 'completed': return '#22c55e'; // Green (Completed)
             case 'locked': default: return '#4b5563'; // Grey
         }
     };
@@ -102,7 +104,7 @@ const LevelSelectScreen = ({ route, navigation }) => {
                     const status = getLevelStatus(level.id, nextId);
                     const cardBg = getCardColor(status);
                     const iconBg = getIconBg(status);
-                    const borderColor = status === 'next' ? '#22c55e' : (status === 'completed' ? '#8b5cf6' : 'rgba(255,255,255,0.1)');
+                    const borderColor = status === 'next' ? '#8b5cf6' : (status === 'completed' ? '#22c55e' : 'rgba(255,255,255,0.1)');
 
                     return (
                         <TouchableOpacity
