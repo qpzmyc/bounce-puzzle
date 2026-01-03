@@ -34,7 +34,7 @@ const MUSIC_FILES = {
     ],
 };
 
-const MAX_CONCURRENT = 3; // Reduced back to 3 to save resources (Total pools: ~15 players)
+const MAX_CONCURRENT = 5; // Reduced back to 3 to save resources (Total pools: ~15 players)
 const soundPools = {};
 let levelCompletePlayer = null;
 let deathPlayer = null;
@@ -58,8 +58,21 @@ let isLoading = false;
 
 export const isAudioSystemInitialized = () => isLoaded;
 
+// VOLUME CONFIGURATION - Centralized for easy adjustment
+const VOLUMES = {
+    // Music
+    music: 0.5, // Base volume for background music
+
+    // Sound Effects
+    normal: 11.0,  // Standard bounce
+    sticky: 1.2,  // Sticky platform bounce
+    super: 1.1,   // Super bounce
+    death: 0.8,   // Death sound
+    level_complete: 1.2, // Victory sound
+};
+
 // VOLUME CONSTANTS
-const BASE_MUSIC_VOL = 0.2; // 50% of original 0.4
+const BASE_MUSIC_VOL = VOLUMES.music;
 const FADE_DURATION = 400; // ms (reduced from 1000 for snappier transitions)
 const FADE_STEPS = 10; // fewer steps for faster fade
 
@@ -96,9 +109,15 @@ const createPlayer = (key, fileMap = SOUND_FILES) => {
             return null;
         }
         const player = createAudioPlayer(resource);
-        if (key === 'sticky') player.volume = 0.5;
-        if (key === 'normal') player.volume = 1.0;
-        if (key === 'death') player.volume = 0.8;
+
+        // Use centralized volume config
+        if (key in VOLUMES) {
+            player.volume = VOLUMES[key];
+        } else {
+            // Fallback default
+            player.volume = 1.0;
+        }
+
         return player;
     } catch (error) {
         console.warn(`Failed to create player for: ${key}`, error);
@@ -147,11 +166,11 @@ export const loadSounds = async () => {
         levelCompletePlayer = createPlayer('level_complete');
 
         // Set volumes
+        // Set volumes from centralized config
         for (const [key, pool] of Object.entries(soundPools)) {
+            const vol = VOLUMES[key] !== undefined ? VOLUMES[key] : 1.0;
             for (const player of pool.players) {
-                if (key === 'sticky') player.volume = 0.5;
-                else if (key === 'death') player.volume = 0.8;
-                else player.volume = 1.0;
+                player.volume = vol;
             }
         }
 
