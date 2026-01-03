@@ -219,29 +219,55 @@ export const showRewardedAd = async () => {
         }
 
         let earnedReward = false;
+        let resolved = false;
+
+        const cleanup = () => {
+            if (resolved) return;
+            resolved = true;
+            unsubscribeClosed?.();
+            unsubscribeEarned?.();
+            unsubscribeError?.();
+            clearTimeout(timeoutId);
+        };
 
         const unsubscribeEarned = rewarded.addAdEventListener(RewardedAdEventType.EARNED_REWARD, (reward) => {
             earnedReward = true;
         });
 
         const unsubscribeClosed = rewarded.addAdEventListener(AdEventType.CLOSED, () => {
-            unsubscribeClosed();
-            unsubscribeEarned();
+            cleanup();
             resolve(earnedReward);
-            rewarded = null; // Reset
-            setTimeout(loadRewarded, 2000); // Preload next
+            rewarded = null;
+            setTimeout(loadRewarded, 2000);
         });
 
-        const unsubscribeError = rewarded.addAdEventListener(AdEventType.ERROR, () => {
-            unsubscribeClosed();
-            unsubscribeEarned();
+        const unsubscribeError = rewarded.addAdEventListener(AdEventType.ERROR, (error) => {
+            console.error("Rewarded Ad Error during show:", error);
+            cleanup();
             resolve(false);
+            rewarded = null;
+            setTimeout(loadRewarded, 2000);
         });
+
+        // Timeout fallback - if ad fails to respond within 10 seconds (common on simulator)
+        // If we are in DEV mode, we resolve to TRUE so the user/dev still gets the reward even if the test ad fails.
+        const timeoutId = setTimeout(() => {
+            if (!resolved) {
+                console.warn("Rewarded ad timed out - resolving to allow user interaction");
+                cleanup();
+                // In development/simulator, treat timeout as success so we can test the reward flow
+                const shouldGrantReward = __DEV__;
+                resolve(shouldGrantReward);
+                rewarded = null;
+                setTimeout(loadRewarded, 2000);
+            }
+        }, 10000);
 
         try {
             rewarded.show();
         } catch (e) {
             console.error("Rewarded Show Failed", e);
+            cleanup();
             resolve(false);
         }
     });

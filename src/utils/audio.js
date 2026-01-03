@@ -56,6 +56,8 @@ let isSoundEnabled = true;
 let isLoaded = false;
 let isLoading = false;
 
+export const isAudioSystemInitialized = () => isLoaded;
+
 // VOLUME CONSTANTS
 const BASE_MUSIC_VOL = 0.2; // 50% of original 0.4
 const FADE_DURATION = 400; // ms (reduced from 1000 for snappier transitions)
@@ -144,8 +146,7 @@ export const loadSounds = async () => {
         initializePool('death');
         levelCompletePlayer = createPlayer('level_complete');
 
-        // Set volumes directly - no warm-up needed with expo-audio
-        // The warm-up was causing lag on older devices
+        // Set volumes
         for (const [key, pool] of Object.entries(soundPools)) {
             for (const player of pool.players) {
                 if (key === 'sticky') player.volume = 0.5;
@@ -463,18 +464,27 @@ export const resumeMusic = () => {
 };
 
 export const unloadSounds = async () => {
+    // 1. Stop all music and clear timers
+    stopMusic(false, true); // instant stop
+
+    // 2. Clear global timers just in case
+    if (nextTrackTimer) clearTimeout(nextTrackTimer);
+    if (fadeOutInterval) clearInterval(fadeOutInterval);
+    if (fadeInInterval) clearInterval(fadeInInterval);
+
+    // 3. Release persistent players
+    if (levelCompletePlayer) {
+        try { levelCompletePlayer.release(); } catch (e) { }
+        levelCompletePlayer = null;
+    }
+
+    // 4. Release sound pools
     for (const pool of Object.values(soundPools)) {
         for (const player of pool.players) {
             try { player.release(); } catch (e) { }
         }
     }
-    if (levelCompletePlayer) {
-        try { levelCompletePlayer.release(); } catch (e) { }
-        levelCompletePlayer = null;
-    }
     for (const key of Object.keys(soundPools)) delete soundPools[key];
 
-    // NOTE: Do NOT stop music here! 
-    // Music is managed independently by screen focus effects.
-    // Stopping music here would kill music that another screen just started.
+    isLoaded = false;
 };

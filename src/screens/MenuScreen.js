@@ -20,6 +20,7 @@ import world2Levels from '../levels/world2';
 import world3Levels from '../levels/world3';
 import { setSoundEnabled, setMusicEnabled, playMusic, stopMusic } from '../utils/audio';
 import { showRewardedAd } from '../utils/ads';
+import StyledModal from '../components/StyledModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -33,6 +34,8 @@ const MenuScreen = ({ navigation }) => {
     const [bonusStars, setBonusStars] = useState(0);
     const [settingsVisible, setSettingsVisible] = useState(false);
     const [settings, setSettings] = useState({ sound: true, haptics: true, music: true });
+    const [bonusAdModal, setBonusAdModal] = useState(false);
+    const [rewardModal, setRewardModal] = useState(false);
 
     // Use useFocusEffect to handle focus events (runs on mount AND on every focus)
     // This replaces the double-call pattern of useEffect + navigation.addListener
@@ -49,7 +52,8 @@ const MenuScreen = ({ navigation }) => {
         }, [])
     );
 
-    const totalStars = getTotalStars(progress, bonusStars);
+    const earnedStars = getTotalStars(progress, 0); // Stars from completed levels only
+    const totalStars = getTotalStars(progress, bonusStars); // Used for unlock checks
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(50)).current;
     const ballBounceAnim = useRef(new Animated.Value(0)).current;
@@ -187,8 +191,9 @@ const MenuScreen = ({ navigation }) => {
                     onPress: async () => {
                         await clearProgress();
                         setProgress({});
+                        setBonusStars(0);
                         setSettingsVisible(false);
-                        Alert.alert("Reset Complete", "All progress has been cleared.");
+                        Alert.alert("Reset Complete", "All progress and bonus stars have been cleared.");
                     }
                 }
             ]
@@ -222,7 +227,7 @@ const MenuScreen = ({ navigation }) => {
             const newBonus = bonusStars + 1;
             setBonusStars(newBonus);
             await saveBonusStars(newBonus);
-            Alert.alert("Reward Earned!", "You've earned +1 Bonus Star! Keep playing to unlock more levels.");
+            setRewardModal(true);
         }
     };
 
@@ -235,22 +240,19 @@ const MenuScreen = ({ navigation }) => {
                 <View style={[styles.bgCircle, styles.bgCircle3]} />
             </View>
 
-            {/* Total Stars Counter */}
-            <TouchableOpacity
-                style={styles.starCounter}
-                onPress={() => {
-                    Alert.alert(
-                        "Bonus Stars",
-                        "Would you like to watch an ad to earn +1 free Bonus Star?",
-                        [
-                            { text: "Later", style: "cancel" },
-                            { text: "Watch Ad", onPress: handleWatchAdReward }
-                        ]
-                    );
-                }}
-            >
+            {/* Earned Stars Counter (Gold - Display Only) */}
+            <View style={styles.starCounter}>
                 <Text style={styles.starIcon}>★</Text>
-                <Text style={styles.starText}>{totalStars}</Text>
+                <Text style={styles.starText}>{earnedStars}</Text>
+            </View>
+
+            {/* Bonus Stars Counter (Purple - Clickable for Ad) */}
+            <TouchableOpacity
+                style={styles.bonusStarCounter}
+                onPress={() => setBonusAdModal(true)}
+            >
+                <Text style={styles.bonusStarIcon}>★</Text>
+                <Text style={styles.starText}>{bonusStars}</Text>
             </TouchableOpacity>
 
             <Animated.View
@@ -347,6 +349,42 @@ const MenuScreen = ({ navigation }) => {
                     </View>
                 </View>
             </Modal>
+
+            {/* Bonus Star Ad Modal */}
+            <StyledModal
+                visible={bonusAdModal}
+                title="Bonus Stars"
+                message="Would you like to watch an ad to earn 1 Bonus Star?"
+                icon="✨"
+                accentColor="#a855f7"
+                buttons={[
+                    { text: "Later", style: 'cancel', onPress: () => setBonusAdModal(false) },
+                    {
+                        text: "Watch Ad", onPress: () => {
+                            setBonusAdModal(false);
+                            // Add delay to let modal close before showing ad
+                            // Increased to 1000ms to ensure view controller is free
+                            setTimeout(async () => {
+                                await handleWatchAdReward();
+                            }, 1000);
+                        }
+                    },
+                ]}
+                onClose={() => setBonusAdModal(false)}
+            />
+
+            {/* Reward Earned Modal */}
+            <StyledModal
+                visible={rewardModal}
+                title="Reward Earned!"
+                message="You've earned 1 Bonus Star! Keep playing to unlock more levels."
+                icon="🎉"
+                accentColor="#22c55e"
+                buttons={[
+                    { text: "Awesome!", onPress: () => setRewardModal(false) }
+                ]}
+                onClose={() => setRewardModal(false)}
+            />
         </View>
     );
 };
@@ -623,6 +661,25 @@ const styles = StyleSheet.create({
         fontSize: s(16),
         fontWeight: 'bold',
         color: '#fff',
+    },
+    bonusStarCounter: {
+        position: 'absolute',
+        top: s(85),
+        right: s(20),
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        paddingVertical: s(6),
+        paddingHorizontal: s(12),
+        borderRadius: s(15),
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(168, 85, 247, 0.3)',
+        zIndex: 10,
+    },
+    bonusStarIcon: {
+        fontSize: s(18),
+        color: '#a855f7', // Purple
+        marginRight: s(5),
     }
 });
 

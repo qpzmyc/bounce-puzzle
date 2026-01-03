@@ -7,6 +7,7 @@ import {
     Dimensions,
     Alert,
 } from 'react-native';
+import StyledModal from '../components/StyledModal';
 import { useFocusEffect } from '@react-navigation/native';
 import { getLevelProgress } from '../utils/storage';
 import { playMusic } from '../utils/audio';
@@ -46,6 +47,7 @@ const WORLDS = [
 
 const WorldSelectScreen = ({ navigation }) => {
     const [progress, setProgress] = React.useState({});
+    const [lockedModal, setLockedModal] = React.useState({ visible: false });
 
     useFocusEffect(
         React.useCallback(() => {
@@ -71,7 +73,7 @@ const WorldSelectScreen = ({ navigation }) => {
 
     const handleWorldSelect = (worldId) => {
         if (!isWorldUnlocked(worldId)) {
-            Alert.alert("World Locked", "Complete all levels in the previous world to unlock this one!");
+            setLockedModal({ visible: true });
             return;
         }
         navigation.navigate('LevelSelect', { worldId });
@@ -116,7 +118,19 @@ const WorldSelectScreen = ({ navigation }) => {
                     );
                 })}
             </View>
-        </View>
+
+            <StyledModal
+                visible={lockedModal.visible}
+                title="World Locked"
+                message="Complete all levels in the previous world to unlock this one!"
+                icon="🔒"
+                accentColor="#ef4444"
+                buttons={[
+                    { text: "Got it", onPress: () => setLockedModal({ visible: false }) }
+                ]}
+                onClose={() => setLockedModal({ visible: false })}
+            />
+        </View >
     );
 };
 

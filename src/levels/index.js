@@ -483,7 +483,7 @@ const levels = [
         id: 121,
         name: "Around the Bend",
         difficulty: 5,
-        requiredStars: 57,
+        requiredStars: 58,
         balls: [{ x: 175, y: 50 }],
         goal: { x: 160, y: 310, width: 30, height: 30 },
         walls: [
@@ -512,7 +512,7 @@ const levels = [
         id: 122,
         name: "Ride the Wind",
         difficulty: 7,
-        requiredStars: 60,
+        requiredStars: 62,
         balls: [{ x: 50, y: 350 }],
         goal: { x: 300, y: 50, width: 30, height: 30 },
         walls: [

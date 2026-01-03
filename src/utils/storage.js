@@ -76,6 +76,9 @@ export const saveLevelProgress = async (levelId, stars) => {
 export const clearProgress = async () => {
     try {
         await AsyncStorage.removeItem(LEVEL_PROGRESS_KEY);
+        await AsyncStorage.removeItem(WORLD_ENTERED_KEY);
+        // also clear bonus stars if "clearing all progress" implies it
+        await AsyncStorage.removeItem(BONUS_STARS_KEY);
     } catch (e) {
         console.error("Failed to clear progress", e);
     }
@@ -138,5 +141,30 @@ export const saveAdState = async (state) => {
         await AsyncStorage.setItem(ADS_KEY, JSON.stringify(state));
     } catch (e) {
         console.error("Failed to save ad state", e);
+    }
+};
+
+// World Entry Tracking (for first-time welcome popups)
+const WORLD_ENTERED_KEY = '@bounce_puzzle_world_entered';
+
+export const hasEnteredWorld = async (worldId) => {
+    try {
+        const jsonValue = await AsyncStorage.getItem(WORLD_ENTERED_KEY);
+        const entered = jsonValue != null ? JSON.parse(jsonValue) : {};
+        return !!entered[worldId];
+    } catch (e) {
+        console.error("Failed to check world entry", e);
+        return false;
+    }
+};
+
+export const markWorldEntered = async (worldId) => {
+    try {
+        const jsonValue = await AsyncStorage.getItem(WORLD_ENTERED_KEY);
+        const entered = jsonValue != null ? JSON.parse(jsonValue) : {};
+        entered[worldId] = true;
+        await AsyncStorage.setItem(WORLD_ENTERED_KEY, JSON.stringify(entered));
+    } catch (e) {
+        console.error("Failed to mark world entry", e);
     }
 };

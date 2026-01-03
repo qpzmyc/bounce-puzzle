@@ -16,6 +16,9 @@ import { getLevelProgress } from '../utils/storage';
 import { getNextLevelOrRedirect, getTotalStars } from '../utils/gameLogic';
 import { Alert } from 'react-native';
 import { playMusic } from '../utils/audio';
+import { getBonusStars, saveBonusStars } from '../utils/storage';
+import { showRewardedAd } from '../utils/ads';
+import StyledModal from '../components/StyledModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -31,26 +34,51 @@ const LevelSelectScreen = ({ route, navigation }) => {
     const levels = world.levels;
 
     const [progress, setProgress] = useState({});
+    const [bonusStars, setBonusStars] = useState(0);
+    const [lockedModal, setLockedModal] = useState({ visible: false, required: 0, current: 0 });
+    const [rewardModal, setRewardModal] = useState({ visible: false, title: '', message: '' });
 
     useFocusEffect(
         useCallback(() => {
             getLevelProgress().then(setProgress);
+            getBonusStars().then(setBonusStars);
             playMusic('menu');
         }, [])
     );
 
     const handleLevelSelect = (levelId) => {
         const level = levels.find(l => l.id === levelId);
-        const totalStars = getTotalStars(progress);
+        const totalStars = getTotalStars(progress, bonusStars);
 
         if (level.requiredStars && totalStars < level.requiredStars) {
-            Alert.alert(
-                "Level Locked",
-                `This level requires ${level.requiredStars} stars to unlock.\nYou currently have ${totalStars} stars.`
-            );
+            setLockedModal({ visible: true, required: level.requiredStars, current: totalStars });
             return;
         }
         navigation.navigate('Game', { levelId });
+    };
+
+    const handleWatchAdReward = async (required, current) => {
+        const earned = await showRewardedAd();
+        if (earned) {
+            const newBonus = bonusStars + 1;
+            setBonusStars(newBonus);
+            await saveBonusStars(newBonus);
+
+            const newTotal = current + 1;
+            if (newTotal >= required) {
+                setRewardModal({
+                    visible: true,
+                    title: "Success!",
+                    message: "You earned a star! The level is now unlocked."
+                });
+            } else {
+                setRewardModal({
+                    visible: true,
+                    title: "Reward Earned!",
+                    message: `You earned +1 Star! You have ${newTotal}/${required} stars.`
+                });
+            }
+        }
     };
 
 
@@ -135,6 +163,48 @@ const LevelSelectScreen = ({ route, navigation }) => {
                     );
                 })}
             </ScrollView>
+
+            {/* Locked Level Modal */}
+            <StyledModal
+                visible={lockedModal.visible}
+                title="Level Locked"
+                message={`This level requires ${lockedModal.required} stars to unlock.\nYou currently have ${lockedModal.current} total star(s).\n\nWatch an ad to earn 1 bonus star`}
+                icon="🔒"
+                accentColor="#f59e0b"
+                buttons={[
+                    { text: "Cancel", style: 'cancel', onPress: () => setLockedModal({ ...lockedModal, visible: false }) },
+                    {
+                        text: "Watch Ad", onPress: () => {
+                            setLockedModal({ ...lockedModal, visible: false });
+                            setTimeout(async () => {
+                                await handleWatchAdReward(lockedModal.required, lockedModal.current);
+                            }, 1000);
+                        }
+                    },
+                ]}
+                onClose={() => setLockedModal({ ...lockedModal, visible: false })}
+            />
+
+            {/* Reward Earned Modal */}
+            <StyledModal
+                visible={rewardModal.visible}
+                title={rewardModal.title}
+                message={rewardModal.message}
+                icon="🎉"
+                accentColor="#22c55e"
+                buttons={[
+                    {
+                        text: "Awesome!", onPress: () => {
+                            setRewardModal({ ...rewardModal, visible: false });
+                            // If unlocked, we could auto-navigate, but letting user choose is better
+                            if (rewardModal.title === "Success!") {
+                                // Maybe refresh or just close
+                            }
+                        }
+                    }
+                ]}
+                onClose={() => setRewardModal({ ...rewardModal, visible: false })}
+            />
         </View>
     );
 };

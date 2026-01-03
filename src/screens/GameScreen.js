@@ -18,12 +18,13 @@ import { COLORS, PHYSICS, GAME, PLATFORM_TYPES } from '../utils/constants';
 import levels from '../levels';
 import world2Levels from '../levels/world2';
 import world3Levels from '../levels/world3';
-import { getLevelProgress, saveLevelProgress, getSettings, getBonusStars, saveBonusStars } from '../utils/storage';
+import { getLevelProgress, saveLevelProgress, getSettings, getBonusStars, saveBonusStars, hasEnteredWorld, markWorldEntered } from '../utils/storage';
 import { getTotalStars, getNextLevelOrRedirect } from '../utils/gameLogic';
 import * as Haptics from 'expo-haptics';
 import { loadSounds, playSound, unloadSounds, setSoundEnabled, playMusic, stopMusic } from '../utils/audio';
 import { recordLevelCompletion, shouldShowAd, showInterstitialAd, resolveAdTrigger, showRewardedAd } from '../utils/ads';
 import { BannerAd, BannerAdSize, TestIds } from '../utils/ads';
+import StyledModal from '../components/StyledModal';
 
 const productionAdUnitID = 'ca-app-pub-9298010065130394/2984194822';
 // Always use TestIds.BANNER in development/simulators to avoid violating Google policy
@@ -166,6 +167,10 @@ const GameScreen = ({ route, navigation }) => {
     const [settings, setSettings] = useState({ haptics: true, sound: true });
     const [showTutorial, setShowTutorial] = useState(false);
     const [selectedPlatformIndex, setSelectedPlatformIndex] = useState(null);  // Index of selected platform, or null
+
+    // Modal states
+    const [worldWelcomeModal, setWorldWelcomeModal] = useState({ visible: false, worldId: 1 });
+    const [lockedLevelModal, setLockedLevelModal] = useState({ visible: false, required: 0, current: 0, quickPlayLevelId: 101 });
 
 
     useEffect(() => {
@@ -397,18 +402,34 @@ const GameScreen = ({ route, navigation }) => {
 
     // console.log(`[GameScreen] Level: ${levelId}...`);
 
-    // Initialize Audio
     // Initialize Audio & Music
     useEffect(() => {
-        loadSounds();
+        // Audio is now loaded globally in App.js to prevent unloading on navigation
         getBonusStars().then(setBonusStars);
 
         return () => {
-            unloadSounds();
-            // Note: stopMusic is handled by the focus effect below, not here
-            // Double-stopping can cause race conditions
+            // Do NOT unload sounds here, as we need them for the Menu
+            // Note: stopMusic is handled by the focus effect below
         };
     }, []);
+
+    // World Welcome Popup (on first entry to any world > 1)
+    useEffect(() => {
+        const checkWorldWelcome = async () => {
+            // Check if we are in World 2+ and haven't welcomed the player yet
+            if (currentWorldId > 1) {
+                const alreadyEntered = await hasEnteredWorld(currentWorldId);
+                if (!alreadyEntered) {
+                    // Reset bonus stars and show popup
+                    await saveBonusStars(0);
+                    setBonusStars(0);
+                    await markWorldEntered(currentWorldId);
+                    setWorldWelcomeModal({ visible: true, worldId: currentWorldId });
+                }
+            }
+        };
+        checkWorldWelcome();
+    }, [currentWorldId]);
 
     // Resume/Stop music on focus/blur
     useEffect(() => {
@@ -514,13 +535,12 @@ const GameScreen = ({ route, navigation }) => {
         setLastTrail([]);  // Clear trail when moving to next level
         setLiveTrail([]);
 
-        // Special transition: Level 123 -> 201
+        // Simple transition to next world (popup shown on load of new world)
         if (levelId === 123) {
             navigation.navigate('Game', { levelId: 201 });
             return;
         }
 
-        // Special transition: Level 223 -> 301
         if (levelId === 223) {
             navigation.navigate('Game', { levelId: 301 });
             return;
@@ -542,27 +562,12 @@ const GameScreen = ({ route, navigation }) => {
             if (totalStars < nextLevel.requiredStars) {
                 // Player doesn't have enough stars
                 const { levelId: quickPlayLevelId } = getNextLevelOrRedirect(levels, progress);
-
-                Alert.alert(
-                    "Level Locked",
-                    `This bonus level requires ${nextLevel.requiredStars} stars to unlock.\nYou currently have ${totalStars} stars.`,
-                    [
-                        { text: "Main Menu", onPress: () => navigation.navigate('Menu') },
-                        {
-                            text: "Watch Ad for +1 Star",
-                            onPress: async () => {
-                                const earned = await showRewardedAd();
-                                if (earned) {
-                                    const newBonus = bonusStars + 1;
-                                    setBonusStars(newBonus);
-                                    await saveBonusStars(newBonus);
-                                    Alert.alert("Success!", "You earned a star! Try opening the level again.");
-                                }
-                            }
-                        },
-                        { text: "Continue Playing", onPress: () => navigation.navigate('Game', { levelId: quickPlayLevelId }) }
-                    ]
-                );
+                setLockedLevelModal({
+                    visible: true,
+                    required: nextLevel.requiredStars,
+                    current: totalStars,
+                    quickPlayLevelId
+                });
                 return;
             }
         }
@@ -984,7 +989,7 @@ const GameScreen = ({ route, navigation }) => {
                             <Text style={{ color: '#e0e0e0', fontSize: 16, textAlign: 'center', marginBottom: 20, lineHeight: 22 }}>
                                 Drag platforms from the top bar to guide the ball to the green goal.
                                 {'\n\n'}
-                                Click drop and see the result!
+                                Press DROP and watch!
                             </Text>
                             <TouchableOpacity
                                 style={{ backgroundColor: '#3b82f6', paddingHorizontal: 30, paddingVertical: 12, borderRadius: 25 }}
@@ -1004,6 +1009,45 @@ const GameScreen = ({ route, navigation }) => {
                     <BannerAd unitId={adUnitID} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} />
                 </View>
             </View>
+
+            {/* World Welcome Modal */}
+            <StyledModal
+                visible={worldWelcomeModal.visible}
+                title={`Welcome to World ${worldWelcomeModal.worldId}!`}
+                message="Bonus stars cannot be transported between worlds."
+                icon="🌟"
+                accentColor="#8b5cf6"
+                buttons={[
+                    { text: "Let's Go!", onPress: () => setWorldWelcomeModal({ ...worldWelcomeModal, visible: false }) }
+                ]}
+                onClose={() => setWorldWelcomeModal({ ...worldWelcomeModal, visible: false })}
+            />
+
+            {/* Locked Level Modal */}
+            <StyledModal
+                visible={lockedLevelModal.visible}
+                title="Level Locked"
+                message={`This bonus level requires ${lockedLevelModal.required} stars to unlock.\n\nYou currently have ${lockedLevelModal.current} stars.`}
+                icon="🔒"
+                accentColor="#f59e0b"
+                buttons={[
+                    { text: "Menu", style: 'cancel', onPress: () => { setLockedLevelModal({ ...lockedLevelModal, visible: false }); navigation.navigate('Menu'); } },
+                    {
+                        text: "Watch Ad", onPress: () => {
+                            setLockedLevelModal({ ...lockedLevelModal, visible: false });
+                            setTimeout(async () => {
+                                const earned = await showRewardedAd();
+                                if (earned) {
+                                    const newBonus = bonusStars + 1;
+                                    setBonusStars(newBonus);
+                                    await saveBonusStars(newBonus);
+                                }
+                            }, 1000);
+                        }
+                    },
+                ]}
+                onClose={() => setLockedLevelModal({ ...lockedLevelModal, visible: false })}
+            />
         </View>
     );
 };

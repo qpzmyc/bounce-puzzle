@@ -13,7 +13,17 @@ const Stack = createNativeStackNavigator();
 
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { useEffect } from 'react';
+import { loadSounds, unloadSounds } from './src/utils/audio';
+
 export default function App() {
+  useEffect(() => {
+    loadSounds();
+    return () => {
+      unloadSounds();
+    };
+  }, []);
+
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
