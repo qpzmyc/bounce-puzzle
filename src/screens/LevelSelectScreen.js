@@ -15,7 +15,7 @@ import world3Levels from '../levels/world3';
 import { getLevelProgress } from '../utils/storage';
 import { getNextLevelOrRedirect, getTotalStars } from '../utils/gameLogic';
 import { Alert } from 'react-native';
-import { playMusic } from '../utils/audio';
+import { playMusic, pauseMusic, resumeMusic } from '../utils/audio';
 import { getBonusStars, saveBonusStars } from '../utils/storage';
 import { showRewardedAd } from '../utils/ads';
 import StyledModal from '../components/StyledModal';
@@ -58,7 +58,10 @@ const LevelSelectScreen = ({ route, navigation }) => {
     };
 
     const handleWatchAdReward = async (required, current) => {
+        pauseMusic();
         const earned = await showRewardedAd();
+        resumeMusic();
+
         if (earned) {
             const newBonus = bonusStars + 1;
             setBonusStars(newBonus);

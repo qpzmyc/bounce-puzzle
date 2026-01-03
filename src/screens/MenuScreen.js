@@ -18,7 +18,7 @@ import { getNextLevelOrRedirect, getTotalStars } from '../utils/gameLogic';
 import levels from '../levels'; // This is likely world1Levels
 import world2Levels from '../levels/world2';
 import world3Levels from '../levels/world3';
-import { setSoundEnabled, setMusicEnabled, playMusic, stopMusic } from '../utils/audio';
+import { setSoundEnabled, setMusicEnabled, playMusic, stopMusic, pauseMusic, resumeMusic } from '../utils/audio';
 import { showRewardedAd } from '../utils/ads';
 import StyledModal from '../components/StyledModal';
 
@@ -222,7 +222,15 @@ const MenuScreen = ({ navigation }) => {
     };
 
     const handleWatchAdReward = async () => {
+        // Pause music before showing ad
+        pauseMusic();
+
         const earned = await showRewardedAd();
+
+        // Resume music immediately after ad closes/fails/completes
+        // This ensures the music is back when the "Reward Earned" modal (or failure state) is shown
+        resumeMusic();
+
         if (earned) {
             const newBonus = bonusStars + 1;
             setBonusStars(newBonus);

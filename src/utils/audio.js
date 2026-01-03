@@ -278,17 +278,34 @@ const startFadeOut = (player) => {
 // Simplified Fade In - set volume immediately for guaranteed audibility
 const startFadeIn = (player) => {
     if (!player) return;
-    try {
-        // Set volume immediately to ensure music is audible
-        player.volume = BASE_MUSIC_VOL;
 
-        // Small delay to ensure player is fully initialized before playing
+    try {
+        // Start at 0 volume
+        player.volume = 0;
+        let vol = 0;
+
+        // Calculate step size
+        // We want to reach BASE_MUSIC_VOL in FADE_DURATION (400ms) with FADE_STEPS (10) steps
+        const step = BASE_MUSIC_VOL / FADE_STEPS;
+
+        // Start playback immediately at 0 volume
         setTimeout(() => {
             try {
                 player.play();
-                player.play();
 
-                // VERIFICATION: Check if it's actually playing after a short delay
+                // Clear any existing fade-in interval to be safe
+                if (fadeInInterval) clearInterval(fadeInInterval);
+
+                fadeInInterval = setInterval(() => {
+                    vol += step;
+                    if (vol >= BASE_MUSIC_VOL) {
+                        vol = BASE_MUSIC_VOL;
+                        clearInterval(fadeInInterval);
+                        fadeInInterval = null;
+                    }
+                    try { player.volume = vol; } catch (e) { }
+                }, FADE_DURATION / FADE_STEPS);
+
                 // VERIFICATION: Check if it's actually playing after a short delay
                 setTimeout(() => {
                     if (player.isPlaying === false) {
@@ -300,6 +317,7 @@ const startFadeIn = (player) => {
                 console.warn("Music play() failed", e);
             }
         }, 50);
+
     } catch (e) {
         console.warn("Music setup failed", e);
     }
