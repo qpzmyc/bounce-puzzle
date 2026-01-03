@@ -5,6 +5,7 @@ const world2Levels = [
     {
         id: 201,
         name: 'The Split',
+        difficulty: 6,
         balls: [{ x: 155, y: 50 }, { x: 195, y: 50 }, { x: 95, y: 330 }, { x: 255, y: 330 }],
         goal: { x: 135, y: 450, width: 80, height: 40 },
         walls: [
@@ -23,6 +24,7 @@ const world2Levels = [
     {
         id: 202,
         name: 'Needle Thread II',
+        difficulty: 5,
         balls: [{ x: 230, y: 40 }],
         goal: { x: 270, y: 400, width: 40, height: 40 },
         walls: [
@@ -54,6 +56,7 @@ const world2Levels = [
     {
         id: 203,
         name: 'High Jump',
+        difficulty: 7,
         balls: [{ x: 30, y: 450 }], // Start at bottom!
         goal: { x: 200, y: 350, width: 40, height: 40 }, // Goal at top!
         walls: [
@@ -69,6 +72,7 @@ const world2Levels = [
     {
         id: 204,
         name: 'Ricochet',
+        difficulty: 6,
         balls: [{ x: 40, y: 50 }],
         goal: { x: 230, y: 320, width: 30, height: 30 },
         walls: [
@@ -97,6 +101,7 @@ const world2Levels = [
     {
         id: 205,
         name: "Launcher",
+        difficulty: 5,
         balls: [
             { x: 60, y: 20 },
             { x: 290, y: 20 },
@@ -124,6 +129,7 @@ const world2Levels = [
     {
         id: 206,
         name: 'Against the Wind',
+        difficulty: 5,
         balls: [{ x: 250, y: 350 }],
         goal: { x: 290, y: 180, width: 40, height: 40 },
         walls: [
@@ -147,6 +153,7 @@ const world2Levels = [
     {
         id: 207,
         name: 'Spike Field',
+        difficulty: 4,
         balls: [{ x: 40, y: 65 }],
         goal: { x: 300, y: 470, width: 30, height: 30 },
         walls: [
@@ -180,6 +187,7 @@ const world2Levels = [
     {
         id: 208,
         name: 'Treasure Cave',
+        difficulty: 6,
         balls: [{ x: 50, y: 60 }],
         goal: { x: 120, y: 450, width: 40, height: 40 },
         walls: [
@@ -204,6 +212,7 @@ const world2Levels = [
     {
         id: 209,
         name: 'Dunk',
+        difficulty: 5,
         balls: [{ x: 295, y: 95 }],
         goal: { x: 150, y: 465, width: 20, height: 20 },
         walls: [
@@ -224,6 +233,7 @@ const world2Levels = [
     {
         id: 210,
         name: 'Dangerous Highway',
+        difficulty: 6,
         balls: [{ x: 30, y: 110 }],
         goal: { x: 300, y: 240, width: 30, height: 30 },
         walls: [
@@ -250,6 +260,7 @@ const world2Levels = [
     {
         id: 211,
         name: 'Criss Cross',
+        difficulty: 6,
         balls: [{ x: 45, y: 195 }, { x: 270, y: 40 }, { x: 260, y: 340 }],
         goal: { x: 15, y: 435, width: 30, height: 30 },
         walls: [
@@ -274,6 +285,7 @@ const world2Levels = [
     {
         id: 212,
         name: 'Stairs',
+        difficulty: 4,
         balls: [{ x: 45, y: 90 }],
         goal: { x: 15, y: 450, width: 40, height: 40 },
         walls: [
@@ -311,6 +323,7 @@ const world2Levels = [
     {
         id: 213,
         name: 'Spiky Hurdles',
+        difficulty: 6,
         balls: [{ x: 240, y: 300 }],
         goal: { x: 10, y: 350, width: 30, height: 30 },
         walls: [
@@ -335,6 +348,7 @@ const world2Levels = [
     {
         id: 214,
         name: 'Chain Reacion',
+        difficulty: 6,
         balls: [{ x: 170, y: 470 }, { x: 120, y: 40 }],
         goal: { x: 15, y: 35, width: 40, height: 40 },
         walls: [
@@ -364,6 +378,7 @@ const world2Levels = [
     {
         id: 215,
         name: 'The Maze',
+        difficulty: 7,
         balls: [{ x: 40, y: 140 }],
         goal: { x: 185, y: 480, width: 20, height: 20 },
         walls: [
@@ -405,6 +420,7 @@ const world2Levels = [
     {
         id: 216,
         name: 'Tunnel',
+        difficulty: 6,
         balls: [{ x: 30, y: 325 }],
         goal: { x: 260, y: 310, width: 30, height: 30 },
         walls: [
@@ -423,8 +439,9 @@ const world2Levels = [
     {
         id: 217,
         name: 'Precision II',
+        difficulty: 8,
         balls: [{ x: 175, y: 20 }],
-        goal: { x: 185, y: 490, width: 20, height: 20 },
+        goal: { x: 165, y: 490, width: 40, height: 20 },
         walls: [
             { x: 120, y: 255, width: 10, height: 510 },
             { x: 230, y: 255, width: 10, height: 510 },
@@ -451,6 +468,7 @@ const world2Levels = [
     {
         id: 218,
         name: 'Leap of Faith',
+        difficulty: 9,
         balls: [{ x: 30, y: 85 }],
         goal: { x: 280, y: 265, width: 20, height: 20 },
         walls: [
@@ -495,6 +513,7 @@ const world2Levels = [
     {
         id: 219,
         name: 'Wrong Way',
+        difficulty: 8,
         balls: [{ x: 95, y: 135 }],
         goal: { x: 270, y: 165, width: 40, height: 40 },
         walls: [
@@ -521,6 +540,7 @@ const world2Levels = [
     {
         id: 220,
         name: 'Treacherous Cavern',
+        difficulty: 9,
         balls: [{ x: 40, y: 100 }],
         goal: { x: 10, y: 380, width: 40, height: 40 },
         walls: [
@@ -559,6 +579,7 @@ const world2Levels = [
     {
         id: 221,
         name: 'Speedway',
+        difficulty: 7,
         requiredStars: 126,
         balls: [{ x: 50, y: 50 }],
         goal: { x: 280, y: 450, width: 40, height: 40 },
@@ -581,6 +602,7 @@ const world2Levels = [
     {
         id: 222,
         name: 'Reverse Loop',
+        difficulty: 9,
         requiredStars: 129,
         balls: [{ x: 150, y: 375 }],
         goal: { x: 120, y: 260, width: 40, height: 40 },
@@ -603,6 +625,8 @@ const world2Levels = [
     {
         id: 223,
         name: 'Mirror Collision',
+        difficulty: 10,
+        requiredStars: 135,
         balls: [{ x: 265, y: 275 }, { x: 75, y: 275 }, { x: 80, y: 165 }, { x: 260, y: 165 }],
         goal: { x: 180, y: 400, width: 100, height: 40 },
         walls: [
@@ -611,8 +635,8 @@ const world2Levels = [
             { x: 170, y: 80, width: 10, height: 160 },
             { x: 260, y: 180, width: 40, height: 10 },
             { x: 80, y: 180, width: 40, height: 10 },
-            { x: 245, y: 170, width: 10, height: 20 },
-            { x: 95, y: 170, width: 10, height: 20 },
+            { x: 245, y: 172.5, width: 10, height: 15 },
+            { x: 95, y: 172.5, width: 10, height: 15 },
         ],
         platforms: { normal: 1, sticky: 1, super: 3 },
         spikes: [

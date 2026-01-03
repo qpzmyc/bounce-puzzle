@@ -94,3 +94,49 @@ export const unlockAllLevels = async (allLevels) => {
         return {};
     }
 };
+
+// Ad System Storage
+const ADS_KEY = '@bounce_puzzle_ads';
+const BONUS_STARS_KEY = '@bounce_puzzle_bonus_stars';
+
+export const getBonusStars = async () => {
+    try {
+        const value = await AsyncStorage.getItem(BONUS_STARS_KEY);
+        return value != null ? parseInt(value) : 0;
+    } catch (e) {
+        console.error("Failed to load bonus stars", e);
+        return 0;
+    }
+};
+
+export const saveBonusStars = async (count) => {
+    try {
+        await AsyncStorage.setItem(BONUS_STARS_KEY, count.toString());
+    } catch (e) {
+        console.error("Failed to save bonus stars", e);
+    }
+};
+
+export const getAdState = async () => {
+    try {
+        const jsonValue = await AsyncStorage.getItem(ADS_KEY);
+        // Default: { difficultyScore: 0, lastAdTimestamp: Date.now() }
+        if (jsonValue != null) {
+            return JSON.parse(jsonValue);
+        }
+        const initial = { difficultyScore: 0, lastAdTimestamp: Date.now() };
+        await AsyncStorage.setItem(ADS_KEY, JSON.stringify(initial));
+        return initial;
+    } catch (e) {
+        console.error("Failed to load ad state", e);
+        return { difficultyScore: 0, lastAdTimestamp: Date.now() };
+    }
+};
+
+export const saveAdState = async (state) => {
+    try {
+        await AsyncStorage.setItem(ADS_KEY, JSON.stringify(state));
+    } catch (e) {
+        console.error("Failed to save ad state", e);
+    }
+};

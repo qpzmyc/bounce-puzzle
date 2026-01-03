@@ -255,19 +255,27 @@ const startFadeOut = (player) => {
 };
 
 // Simplified Fade In - set volume immediately for guaranteed audibility
+// Simplified Fade In - set volume immediately for guaranteed audibility
 const startFadeIn = (player) => {
     if (!player) return;
     try {
         // Set volume immediately to ensure music is audible
-        // This avoids race conditions where fade interval never completes
         player.volume = BASE_MUSIC_VOL;
 
         // Small delay to ensure player is fully initialized before playing
-        // expo-audio can have timing issues without this
         setTimeout(() => {
             try {
                 player.play();
-                console.log("Music playback started");
+                player.play();
+
+                // VERIFICATION: Check if it's actually playing after a short delay
+                // VERIFICATION: Check if it's actually playing after a short delay
+                setTimeout(() => {
+                    if (player.isPlaying === false) {
+                        try { player.play(); } catch (e) { }
+                    }
+                }, 500);
+
             } catch (e) {
                 console.warn("Music play() failed", e);
             }
@@ -279,7 +287,9 @@ const startFadeIn = (player) => {
 
 export const playMusic = (trackKey) => {
     if (!isMusicEnabled) {
-        console.log("Music is disabled, ignoring play request");
+        if (!isMusicEnabled) {
+            return;
+        }
         return;
     }
 
@@ -287,18 +297,22 @@ export const playMusic = (trackKey) => {
     // Only check currentTrackKey AND player exists - don't block based on pending.
     // We clear pending after track starts, so checking it here was too aggressive.
     if (currentTrackKey === trackKey && currentMusicPlayer) {
-        console.log(`Music already playing for: ${trackKey}, skipping`);
+        if (currentTrackKey === trackKey && currentMusicPlayer) {
+            return;
+        }
         return;
     }
 
     // If we're already setting up this exact track, skip duplicate calls.
     // But this is a narrow window - only blocks rapid-fire identical calls.
     if (pendingTrackKey === trackKey) {
-        console.log(`Music pending for: ${trackKey}, skipping duplicate`);
+        if (pendingTrackKey === trackKey) {
+            return;
+        }
         return;
     }
 
-    console.log(`Starting music for: ${trackKey}`);
+
 
     // Mark this track as pending immediately to block duplicate calls
     pendingTrackKey = trackKey;
@@ -328,7 +342,7 @@ const playNextTrackInPlaylist = (isFirstTrack = false) => {
         return;
     }
 
-    console.log(`Playing next track for: ${currentTrackKey}, index: ${currentPlaylistIndex}`);
+
 
     const resources = MUSIC_FILES[currentTrackKey];
     let resource;
@@ -366,11 +380,9 @@ const playNextTrackInPlaylist = (isFirstTrack = false) => {
                     player.progressUpdateIntervalMillis = 2000; // Heartbeat every 2s
                     player.addListener('playbackStatusUpdate', (status) => {
                         if (status.didJustFinish) {
-                            console.log("Track finished, playing next");
                             playNextTrackInPlaylist();
                         } else if (status.isPlaying && status.positionMillis > 0 && status.positionMillis % 10000 < 200) {
                             // Log every ~10s effectively (rough check)
-                            console.log(`Music heartbeat: ${Math.round(status.positionMillis / 1000)}s / ${Math.round(status.durationMillis / 1000)}s`);
                         }
                     });
                 } catch (e) {
@@ -389,7 +401,6 @@ const playNextTrackInPlaylist = (isFirstTrack = false) => {
                 setTimeout(() => {
                     try {
                         const randomSeconds = Math.floor(Math.random() * 30);
-                        console.log(`Seeking to ${randomSeconds}s for variety`);
                         // expo-audio seekTo expects SECONDS, not milliseconds
                         if (typeof player.seekTo === 'function') {
                             player.seekTo(randomSeconds);

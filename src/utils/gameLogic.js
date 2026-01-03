@@ -1,5 +1,6 @@
-export const getTotalStars = (progress) => {
-    return Object.values(progress).reduce((acc, curr) => acc + (curr.stars || 0), 0);
+export const getTotalStars = (progress, bonusStars = 0) => {
+    const earnedStars = Object.values(progress).reduce((acc, curr) => acc + (curr.stars || 0), 0);
+    return earnedStars + bonusStars;
 };
 
 export const getNextLevelOrRedirect = (levels, progress) => {

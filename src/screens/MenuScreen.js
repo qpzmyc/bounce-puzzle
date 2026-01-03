@@ -13,12 +13,13 @@ import {
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../utils/constants';
-import { getLevelProgress, clearProgress, getSettings, saveSettings, unlockAllLevels } from '../utils/storage'; // Added unlockAllLevels
-import { getNextLevelOrRedirect } from '../utils/gameLogic';
+import { getLevelProgress, clearProgress, getSettings, saveSettings, unlockAllLevels, getBonusStars, saveBonusStars } from '../utils/storage'; // Added bonus stars functions
+import { getNextLevelOrRedirect, getTotalStars } from '../utils/gameLogic';
 import levels from '../levels'; // This is likely world1Levels
 import world2Levels from '../levels/world2';
 import world3Levels from '../levels/world3';
 import { setSoundEnabled, setMusicEnabled, playMusic, stopMusic } from '../utils/audio';
+import { showRewardedAd } from '../utils/ads';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -29,6 +30,7 @@ const s = (size) => Math.round(size * uiScale);
 
 const MenuScreen = ({ navigation }) => {
     const [progress, setProgress] = React.useState({});
+    const [bonusStars, setBonusStars] = useState(0);
     const [settingsVisible, setSettingsVisible] = useState(false);
     const [settings, setSettings] = useState({ sound: true, haptics: true, music: true });
 
@@ -37,6 +39,7 @@ const MenuScreen = ({ navigation }) => {
     useFocusEffect(
         React.useCallback(() => {
             getLevelProgress().then(setProgress);
+            getBonusStars().then(setBonusStars);
             getSettings().then(s => {
                 setSettings(s);
                 setSoundEnabled(s.sound);
@@ -46,6 +49,7 @@ const MenuScreen = ({ navigation }) => {
         }, [])
     );
 
+    const totalStars = getTotalStars(progress, bonusStars);
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(50)).current;
     const ballBounceAnim = useRef(new Animated.Value(0)).current;
@@ -212,6 +216,16 @@ const MenuScreen = ({ navigation }) => {
         );
     };
 
+    const handleWatchAdReward = async () => {
+        const earned = await showRewardedAd();
+        if (earned) {
+            const newBonus = bonusStars + 1;
+            setBonusStars(newBonus);
+            await saveBonusStars(newBonus);
+            Alert.alert("Reward Earned!", "You've earned +1 Bonus Star! Keep playing to unlock more levels.");
+        }
+    };
+
     return (
         <View style={styles.container}>
             {/* ... background ... */}
@@ -220,6 +234,24 @@ const MenuScreen = ({ navigation }) => {
                 <View style={[styles.bgCircle, styles.bgCircle2]} />
                 <View style={[styles.bgCircle, styles.bgCircle3]} />
             </View>
+
+            {/* Total Stars Counter */}
+            <TouchableOpacity
+                style={styles.starCounter}
+                onPress={() => {
+                    Alert.alert(
+                        "Bonus Stars",
+                        "Would you like to watch an ad to earn +1 free Bonus Star?",
+                        [
+                            { text: "Later", style: "cancel" },
+                            { text: "Watch Ad", onPress: handleWatchAdReward }
+                        ]
+                    );
+                }}
+            >
+                <Text style={styles.starIcon}>★</Text>
+                <Text style={styles.starText}>{totalStars}</Text>
+            </TouchableOpacity>
 
             <Animated.View
                 style={[
@@ -565,6 +597,32 @@ const styles = StyleSheet.create({
         shadowRadius: 2.5,
         elevation: 1.5,
         // transform logic handles position
+    },
+
+    // Star Counter
+    starCounter: {
+        position: 'absolute',
+        top: s(50),
+        right: s(20),
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        paddingVertical: s(6),
+        paddingHorizontal: s(12),
+        borderRadius: s(15),
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        zIndex: 10,
+    },
+    starIcon: {
+        fontSize: s(18),
+        color: '#fbbf24', // Gold
+        marginRight: s(5),
+    },
+    starText: {
+        fontSize: s(16),
+        fontWeight: 'bold',
+        color: '#fff',
     }
 });
 

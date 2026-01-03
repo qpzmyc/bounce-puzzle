@@ -6,6 +6,7 @@ const levels = [
     {
         id: 101,
         name: "Hello Bounce",
+        difficulty: 1,
         balls: [{ x: 80, y: 50 }],
         goal: { x: 250, y: 350, width: 40, height: 40 },
         walls: [
@@ -22,6 +23,7 @@ const levels = [
     {
         id: 102,
         name: "Watch Your Step",
+        difficulty: 2,
         balls: [{ x: 170, y: 50 }],
         goal: { x: 150, y: 400, width: 40, height: 40 },  // Centered (GAME.width/2 - width/2 = 170 - 25 = 145)
         walls: [
@@ -40,6 +42,7 @@ const levels = [
     {
         id: 103,
         name: "Windy Day",
+        difficulty: 2,
         balls: [{ x: 60, y: 60 }],
         goal: { x: 270, y: 300, width: 40, height: 40 },
         walls: [
@@ -56,6 +59,7 @@ const levels = [
     {
         id: 104,
         name: "Wall Dive",
+        difficulty: 4,
         balls: [{ x: 50, y: 200 }],
         goal: { x: 280, y: 230, width: 40, height: 40 }, // Goal moved Lower (150 -> 180) for easier shot
         walls: [
@@ -73,6 +77,7 @@ const levels = [
     {
         id: 105,
         name: "Physics Lab",
+        difficulty: 3,
         balls: [{ x: 50, y: 150 }, { x: 200, y: 50 }],  // Left ball starts lower to require super pad
         goal: { x: 270, y: 200, width: 40, height: 40 }, // Lowered goal
         walls: [
@@ -88,6 +93,7 @@ const levels = [
     {
         id: 106,
         name: "Zig Zag",
+        difficulty: 4,
         balls: [{ x: 50, y: 50 }],
         goal: { x: 50, y: 460, width: 40, height: 40 },
         walls: [
@@ -108,6 +114,7 @@ const levels = [
     {
         id: 107,
         name: "Crosswind",
+        difficulty: 3,
         balls: [{ x: 170, y: 50 }],
         goal: { x: 170, y: 450, width: 40, height: 40 },
         walls: [
@@ -135,6 +142,7 @@ const levels = [
     {
         id: 108,
         name: "Double Trouble",
+        difficulty: 2,
         balls: [{ x: 80, y: 50 }, { x: 260, y: 50 }],
         goal: { x: 170, y: 350, width: 40, height: 40 },
         walls: [],
@@ -150,6 +158,7 @@ const levels = [
     {
         id: 109,
         name: "Needle Thread",
+        difficulty: 4,
         balls: [{ x: 50, y: 50 }], // Offset, not aligned!
         goal: { x: 50, y: 450, width: 40, height: 40 }, // Moved to LEFT side (170 -> 50)
         walls: [
@@ -163,7 +172,7 @@ const levels = [
             { x: 185, y: 275, width: 155, height: 10, direction: 'up' },  // Right side spikes (after gap)
         ],
         noPlaceZones: [
-            { x: 200, y: 140, width: 20, height: 260 }, // Gap
+            { x: 260, y: 137.5, width: 150, height: 275 }, // Gap
         ],
     },
 
@@ -171,6 +180,7 @@ const levels = [
     {
         id: 110,
         name: "Upside Down Chute",
+        difficulty: 5,
         balls: [{ x: 30, y: 400 }, { x: 300, y: 400 }],
         goal: { x: 170, y: 20, width: 40, height: 40 },
         walls: [
@@ -204,6 +214,7 @@ const levels = [
     {
         id: 111,
         name: "The Decoy",
+        difficulty: 3,
         balls: [{ x: 50, y: 50 }],
         goal: { x: 280, y: 450, width: 40, height: 40 },
         walls: [
@@ -226,6 +237,7 @@ const levels = [
     {
         id: 112,
         name: "Ascension",
+        difficulty: 5,
         balls: [{ x: 50, y: 450 }],
         goal: { x: 120, y: 200, width: 40, height: 40 },
         walls: [
@@ -247,6 +259,7 @@ const levels = [
     {
         id: 113,
         name: "Precision",
+        difficulty: 4,
         balls: [{ x: 300, y: 50 }],
         goal: { x: 290, y: 265, width: 30, height: 30 },
         walls: [
@@ -272,6 +285,7 @@ const levels = [
     {
         id: 114,
         name: "The Loop",
+        difficulty: 4,
         balls: [{ x: 50, y: 100 }],
         goal: { x: 50, y: 350, width: 40, height: 40 },
         walls: [
@@ -296,6 +310,7 @@ const levels = [
     {
         id: 115,
         name: "Two Points",
+        difficulty: 4,
         balls: [{ x: 50, y: 110 }, { x: 100, y: 230 }], // Start low left
         goal: { x: 290, y: 400, width: 40, height: 40 }, // In box bottom right
         walls: [
@@ -318,6 +333,7 @@ const levels = [
     {
         id: 116,
         name: "Strong Current",
+        difficulty: 5,
         balls: [{ x: 50, y: 80 }],
         goal: { x: 150, y: 450, width: 40, height: 40 },
         walls: [],
@@ -341,6 +357,7 @@ const levels = [
     {
         id: 117,
         name: "The Vault",
+        difficulty: 4,
         balls: [{ x: 175, y: 50 }], // Falling down
         goal: { x: 150, y: 350, width: 40, height: 40 }, // High up, guarded
         walls: [
@@ -370,6 +387,7 @@ const levels = [
     {
         id: 118,
         name: "Orbit",
+        difficulty: 4,
         balls: [{ x: 30, y: 50 }, { x: 45, y: 80 }, { x: 60, y: 110 }],
         goal: { x: 220, y: 360, width: 40, height: 40 }, // CENTER
         walls: [
@@ -396,6 +414,7 @@ const levels = [
     {
         id: 119,
         name: "Funnel",
+        difficulty: 6,
         balls: [
             { x: 320, y: 50 },
             { x: 170, y: 50 },
@@ -432,6 +451,7 @@ const levels = [
     {
         id: 120,
         name: "Two Paths",
+        difficulty: 5,
         balls: [{ x: 80, y: 150 }, { x: 60, y: 450 }],
         goal: { x: 185, y: 50, width: 40, height: 40 }, // Top right
         walls: [
@@ -461,8 +481,9 @@ const levels = [
     // 21. Bonus I (50 Stars)
     {
         id: 121,
-        name: "Star Gate I",
-        requiredStars: 50,
+        name: "Around the Bend",
+        difficulty: 5,
+        requiredStars: 57,
         balls: [{ x: 175, y: 50 }],
         goal: { x: 160, y: 310, width: 30, height: 30 },
         walls: [
@@ -489,8 +510,9 @@ const levels = [
     // 22. Bonus II (58 Stars)
     {
         id: 122,
-        name: "Star Gate II",
-        requiredStars: 58,
+        name: "Ride the Wind",
+        difficulty: 7,
+        requiredStars: 60,
         balls: [{ x: 50, y: 350 }],
         goal: { x: 300, y: 50, width: 30, height: 30 },
         walls: [
@@ -513,6 +535,7 @@ const levels = [
     {
         id: 123,
         name: "Isaac's Gauntlet",
+        difficulty: 8,
         requiredStars: 66,
         balls: [{ x: 175, y: 50 }, { x: 250, y: 470 }],
         goal: { x: 315, y: 490, width: 20, height: 20 },
