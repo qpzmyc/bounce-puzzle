@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getLevelProgress } from '../utils/storage';
+import { playMusic } from '../utils/audio';
 import world1Levels from '../levels';
 import world2Levels from '../levels/world2';
 import { COLORS } from '../utils/constants';
@@ -49,6 +50,7 @@ const WorldSelectScreen = ({ navigation }) => {
     useFocusEffect(
         React.useCallback(() => {
             getLevelProgress().then(setProgress);
+            playMusic('menu');
         }, [])
     );
 

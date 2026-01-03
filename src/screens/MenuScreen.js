@@ -10,13 +10,15 @@ import {
     Switch,
     Alert // Added Alert
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../utils/constants';
 import { getLevelProgress, clearProgress, getSettings, saveSettings, unlockAllLevels } from '../utils/storage'; // Added unlockAllLevels
 import { getNextLevelOrRedirect } from '../utils/gameLogic';
 import levels from '../levels'; // This is likely world1Levels
 import world2Levels from '../levels/world2';
 import world3Levels from '../levels/world3';
-import { setSoundEnabled } from '../utils/audio';
+import { setSoundEnabled, setMusicEnabled, playMusic, stopMusic } from '../utils/audio';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -28,25 +30,21 @@ const s = (size) => Math.round(size * uiScale);
 const MenuScreen = ({ navigation }) => {
     const [progress, setProgress] = React.useState({});
     const [settingsVisible, setSettingsVisible] = useState(false);
-    const [settings, setSettings] = useState({ sound: true, haptics: true });
+    const [settings, setSettings] = useState({ sound: true, haptics: true, music: true });
 
-    useEffect(() => {
-        getLevelProgress().then(setProgress);
-        getSettings().then(s => {
-            setSettings(s);
-            setSoundEnabled(s.sound);
-        });
-
-        // Add navigation listener to refresh progress when coming back
-        const unsubscribe = navigation.addListener('focus', () => {
+    // Use useFocusEffect to handle focus events (runs on mount AND on every focus)
+    // This replaces the double-call pattern of useEffect + navigation.addListener
+    useFocusEffect(
+        React.useCallback(() => {
             getLevelProgress().then(setProgress);
             getSettings().then(s => {
                 setSettings(s);
                 setSoundEnabled(s.sound);
+                setMusicEnabled(s.music);
+                if (s.music) playMusic('menu');
             });
-        });
-        return unsubscribe;
-    }, [navigation]);
+        }, [])
+    );
 
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(50)).current;
@@ -117,10 +115,60 @@ const MenuScreen = ({ navigation }) => {
     };
 
     const toggleSetting = (key) => {
-        const newSettings = { ...settings, [key]: !settings[key] };
+        const newValue = !settings[key];
+        const newSettings = { ...settings, [key]: newValue };
         setSettings(newSettings);
-        saveSettings(newSettings);
-        if (key === 'sound') setSoundEnabled(newSettings.sound);
+
+        // Manual Haptics: Only trigger if Haptics are ENABLED in settings (before toggle?) 
+        // OR: User wants "Turn off haptic feedback of other switches" -> implied: if haptics is ON, we feel it.
+        // If we just turned Haptics OFF, we might still feel the "off" click? Usually yes.
+        // But if Haptics is OFF, and we toggle Sound, we should FEEL NOTHING.
+        if (settings.haptics) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
+
+        // Delay heavy work 
+        requestAnimationFrame(() => {
+            saveSettings(newSettings);
+            if (key === 'sound') setSoundEnabled(newSettings.sound);
+            if (key === 'music') {
+                const resumed = setMusicEnabled(newSettings.music);
+                if (newSettings.music && !resumed && settingsVisible) {
+                    playMusic('menu');
+                }
+            }
+        });
+    };
+
+    const CustomSwitch = ({ value, onValueChange }) => {
+        // Animation for the thumb
+        const anim = useRef(new Animated.Value(value ? 1 : 0)).current;
+
+        useEffect(() => {
+            Animated.timing(anim, {
+                toValue: value ? 1 : 0,
+                duration: 200,
+                useNativeDriver: false, // backgroundColor doesn't support native driver
+            }).start();
+        }, [value]);
+
+        const translateX = anim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [2, 22] // Move from left (2) to right (22) (Total width 50, thumb 26 -> 50-26-2 = 22)
+        });
+
+        const backgroundColor = anim.interpolate({
+            inputRange: [0, 1],
+            outputRange: ['#767577', COLORS.ui.primary]
+        });
+
+        return (
+            <TouchableOpacity activeOpacity={0.8} onPress={onValueChange}>
+                <Animated.View style={[styles.switchTrack, { backgroundColor }]}>
+                    <Animated.View style={[styles.switchThumb, { transform: [{ translateX }] }]} />
+                </Animated.View>
+            </TouchableOpacity>
+        );
     };
 
     const handleReset = () => {
@@ -167,7 +215,6 @@ const MenuScreen = ({ navigation }) => {
     return (
         <View style={styles.container}>
             {/* ... background ... */}
-            {/* Background decoration */}
             <View style={styles.bgDecoration}>
                 <View style={[styles.bgCircle, styles.bgCircle1]} />
                 <View style={[styles.bgCircle, styles.bgCircle2]} />
@@ -196,16 +243,6 @@ const MenuScreen = ({ navigation }) => {
                 {/* Title */}
                 <Text style={styles.title}>Bounce</Text>
                 <Text style={styles.subtitle}>Puzzle</Text>
-                <Text style={styles.tagline}>Guide the ball to victory</Text>
-
-                {/* Demo platform */}
-                <View style={styles.demoPlatform}>
-                    <View style={styles.platformGrip}>
-                        <View style={styles.gripLine} />
-                        <View style={styles.gripLine} />
-                        <View style={styles.gripLine} />
-                    </View>
-                </View>
 
                 {/* Buttons */}
                 <View style={styles.buttons}>
@@ -221,8 +258,6 @@ const MenuScreen = ({ navigation }) => {
                         <Text style={styles.settingsButtonText}>Settings</Text>
                     </TouchableOpacity>
                 </View>
-
-
             </Animated.View>
 
             {/* Settings Modal */}
@@ -232,31 +267,34 @@ const MenuScreen = ({ navigation }) => {
                 visible={settingsVisible}
                 onRequestClose={() => setSettingsVisible(false)}
             >
-                <View style={styles.modalCentered}>
+                <View style={styles.modalCentered} key={settingsVisible ? 'open' : 'closed'}>
                     <View style={styles.modalView}>
                         <Text style={styles.modalTitle}>Settings</Text>
 
                         {/* Sound Toggle */}
                         <View style={styles.settingRow}>
                             <Text style={styles.settingText}>Sound Effects</Text>
-                            <Switch
-                                trackColor={{ false: "#767577", true: COLORS.ui.primary }}
-                                thumbColor={settings.sound ? "#f4f3f4" : "#f4f3f4"}
-                                ios_backgroundColor="#3e3e3e"
+                            <CustomSwitch
+                                value={!!settings.sound}
                                 onValueChange={() => toggleSetting('sound')}
-                                value={settings.sound}
+                            />
+                        </View>
+
+                        {/* Music Toggle */}
+                        <View style={styles.settingRow}>
+                            <Text style={styles.settingText}>Music</Text>
+                            <CustomSwitch
+                                value={!!settings.music}
+                                onValueChange={() => toggleSetting('music')}
                             />
                         </View>
 
                         {/* Haptics Toggle */}
                         <View style={styles.settingRow}>
                             <Text style={styles.settingText}>Haptic Feedback</Text>
-                            <Switch
-                                trackColor={{ false: "#767577", true: COLORS.ui.primary }}
-                                thumbColor={settings.haptics ? "#f4f3f4" : "#f4f3f4"}
-                                ios_backgroundColor="#3e3e3e"
+                            <CustomSwitch
+                                value={!!settings.haptics}
                                 onValueChange={() => toggleSetting('haptics')}
-                                value={settings.haptics}
                             />
                         </View>
 
@@ -506,6 +544,27 @@ const styles = StyleSheet.create({
         color: "white",
         fontWeight: "bold",
         textAlign: "center"
+    },
+
+    // Custom Switch Styles
+    switchTrack: {
+        width: 50,
+        height: 30,
+        borderRadius: 15,
+        justifyContent: 'center',
+        backgroundColor: '#767577' // Default, overridden by animation
+    },
+    switchThumb: {
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        backgroundColor: '#ffffff',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2.5,
+        elevation: 1.5,
+        // transform logic handles position
     }
 });
 

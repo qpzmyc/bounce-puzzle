@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated, PanResponder, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated, PanResponder, Alert, Pressable } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'; // Fixed Import
 import { useIsFocused } from '@react-navigation/native';
 import { GameEngine } from 'react-native-game-engine';
@@ -21,7 +21,7 @@ import world3Levels from '../levels/world3';
 import { saveLevelProgress, getLevelProgress, getSettings } from '../utils/storage';
 import { getTotalStars, getNextLevelOrRedirect } from '../utils/gameLogic';
 import * as Haptics from 'expo-haptics';
-import { loadSounds, playSound, unloadSounds, setSoundEnabled } from '../utils/audio';
+import { loadSounds, playSound, unloadSounds, setSoundEnabled, playMusic, stopMusic } from '../utils/audio';
 import { BannerAd, BannerAdSize, TestIds } from '../utils/ads';
 
 const productionAdUnitID = 'ca-app-pub-9298010065130394/2984194822';
@@ -163,6 +163,9 @@ const GameScreen = ({ route, navigation }) => {
     const [draggingPlatform, setDraggingPlatform] = useState(null);  // { type, gameX, gameY } for ghost preview
     const [settings, setSettings] = useState({ haptics: true, sound: true });
     const [showTutorial, setShowTutorial] = useState(false);
+    const [selectedPlatformIndex, setSelectedPlatformIndex] = useState(null);  // Index of selected platform, or null
+    const isGameOverRef = useRef(false);  // Ref to prevent double game-over triggers (e.g. win after lose logic started)
+    const hasTriggeredDeathRef = useRef(false); // Ref to ensure death sound/particles only happen once
 
     useEffect(() => {
         if (levelId === 101) {
@@ -383,9 +386,7 @@ const GameScreen = ({ route, navigation }) => {
 
     };
 
-    useEffect(() => { setPlacedPlatforms([]); setGameState('setup'); setStars(0); setLastTrail([]); setLiveTrail([]); }, [levelId]);
-
-    useEffect(() => { setPlacedPlatforms([]); setGameState('setup'); setStars(0); setLastTrail([]); setLiveTrail([]); }, [levelId]);
+    useEffect(() => { setPlacedPlatforms([]); setGameState('setup'); setStars(0); setLastTrail([]); setLiveTrail([]); setSelectedPlatformIndex(null); isGameOverRef.current = false; hasTriggeredDeathRef.current = false; }, [levelId]);
 
     // Theme logic moved up
     // console.log(`[GameScreen] Level: ${levelId}...`);
@@ -393,10 +394,32 @@ const GameScreen = ({ route, navigation }) => {
     // console.log(`[GameScreen] Level: ${levelId}...`);
 
     // Initialize Audio
+    // Initialize Audio & Music
     useEffect(() => {
         loadSounds();
-        return () => unloadSounds();
+
+        return () => {
+            unloadSounds();
+            // Note: stopMusic is handled by the focus effect below, not here
+            // Double-stopping can cause race conditions
+        };
     }, []);
+
+    // Resume/Stop music on focus/blur
+    useEffect(() => {
+        if (isFocused) {
+            // Determine track again in case we came back
+            let track = 'menu';
+            if (levelId >= 101 && levelId < 200) track = 'world1';
+            else if (levelId >= 201 && levelId < 300) track = 'world2';
+            else if (levelId >= 301) track = 'world3';
+            playMusic(track);
+        }
+        // NOTE: Do NOT stop music on blur!
+        // The next screen will call playMusic with its own track.
+        // Stopping here causes a race condition where we kill the music
+        // that the new screen just started.
+    }, [isFocused, levelId]);
 
     useEffect(() => {
         const e = buildEntities(false);
@@ -450,6 +473,9 @@ const GameScreen = ({ route, navigation }) => {
 
         // Reset game state to setup
         setGameState('setup');
+        // Kept selected platform index as per user request
+        isGameOverRef.current = false;
+        hasTriggeredDeathRef.current = false;
         const e = buildEntities(false);
         setEntities(e);
         gameEngineRef.current?.swap(e);
@@ -511,6 +537,9 @@ const GameScreen = ({ route, navigation }) => {
 
     const handleEvent = (e) => {
         if (e.type === 'game-over') {
+            if (isGameOverRef.current) return; // Ignore if game over already triggered
+            isGameOverRef.current = true;
+
             // Save trail from this attempt before resetting
             if (entities?.trail?.points) {
                 setLastTrail([...entities.trail.points]);
@@ -525,14 +554,30 @@ const GameScreen = ({ route, navigation }) => {
                 // ... spike logic (placeholder) ...
             }
 
-            setGameState(e.result);
+            if (e.result === 'lose') {
+                // Delay showing "Try Again" screen by 0.6 seconds
+                setTimeout(() => {
+                    setGameState(e.result);
+                }, 600);
+            } else {
+                setGameState(e.result);
+            }
         } else if (e.type === 'ball-in-goal') {
             // Trigger particle burst for EACH ball entering the goal
             const { x, y } = e.position;
             particleSystemRef.current?.emit(x, y, '#fbbf24', 15); // Gold
             particleSystemRef.current?.emit(x, y, '#10b981', 15); // Green
             if (settings.haptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            playSound('sticky'); // Or a specific goal sound? using sticky/pop for now
+            // playSound('sticky'); // Removed as per request to avoid "final sticky sound"
+        } else if (e.type === 'spike-hit') {
+            // Trigger particle burst on spike hit
+            if (hasTriggeredDeathRef.current) return;
+            hasTriggeredDeathRef.current = true;
+
+            const { x, y } = e.position;
+            particleSystemRef.current?.emit(x, y, e.color, 15);
+            if (settings.haptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            playSound('death');
         }
     };
 
@@ -555,7 +600,9 @@ const GameScreen = ({ route, navigation }) => {
 
                 if (isValid && !isDuplicate) {
                     found = true;
+                    const newIndex = placedPlatforms.length;
                     setPlacedPlatforms([...placedPlatforms, { x, y, angle: 0, type }]);
+                    setSelectedPlatformIndex(newIndex);  // Select the newly placed platform
                     break;
                 }
 
@@ -579,12 +626,14 @@ const GameScreen = ({ route, navigation }) => {
     // Add platform at specific position (for drag-to-place)
     const addPlatformAt = (type, x, y) => {
         if (getRemainingByType(type) > 0 && gameState === 'setup') {
+            const newIndex = placedPlatforms.length;
             setPlacedPlatforms([...placedPlatforms, {
                 x: Math.max(PHYSICS.platformWidth / 2, Math.min(GAME.width - PHYSICS.platformWidth / 2, x)),
                 y: Math.max(PHYSICS.platformHeight / 2, Math.min(GAME.height - PHYSICS.platformHeight / 2, y)),
                 angle: 0,
                 type
             }]);
+            setSelectedPlatformIndex(newIndex);  // Select the newly placed platform
         }
     };
 
@@ -596,7 +645,18 @@ const GameScreen = ({ route, navigation }) => {
         });
     };
 
-    const removePlatform = (i) => setPlacedPlatforms(placedPlatforms.filter((_, j) => j !== i));
+    const removePlatform = (i) => {
+        setPlacedPlatforms(placedPlatforms.filter((_, j) => j !== i));
+        setSelectedPlatformIndex(null);  // Clear selection when removing
+    };
+
+    const selectPlatform = (i) => {
+        setSelectedPlatformIndex(i);
+    };
+
+    const clearSelection = () => {
+        setSelectedPlatformIndex(null);
+    };
 
     const Stars = ({ count, size = 16 }) => (
         <View style={{ flexDirection: 'row' }}>
@@ -787,7 +847,10 @@ const GameScreen = ({ route, navigation }) => {
                         });
                     }}
                 >
-                    <View style={{ width: GAME.width, height: GAME.height, transform: [{ scale }], transformOrigin: 'top left', backgroundColor: '#0a0a18' }}>
+                    <Pressable
+                        style={{ width: GAME.width, height: GAME.height, transform: [{ scale }], transformOrigin: 'top left', backgroundColor: '#0a0a18' }}
+                        onPress={() => { if (gameState === 'setup') clearSelection(); }}
+                    >
                         {entities && <GameEngine ref={gameEngineRef} style={{ width: GAME.width, height: GAME.height }} systems={[Physics]} entities={entities} running={gameState === 'playing' && isFocused} onEvent={handleEvent} />}
 
                         {gameState === 'setup' && lastTrail.length > 0 && <BallTrail points={lastTrail} />}
@@ -795,7 +858,17 @@ const GameScreen = ({ route, navigation }) => {
 
                         {gameState === 'setup' && (level.balls || []).map((b, i) => <StartArea key={i} position={b} />)}
                         {gameState === 'setup' && placedPlatforms.map((p, i) => (
-                            <DraggablePlatform key={i} p={p} i={i} scale={scale} onUpdate={updatePlatform} onRemove={removePlatform} zones={level.noPlaceZones} />
+                            <DraggablePlatform
+                                key={i}
+                                p={p}
+                                i={i}
+                                scale={scale}
+                                onUpdate={updatePlatform}
+                                onRemove={removePlatform}
+                                zones={level.noPlaceZones}
+                                isSelected={selectedPlatformIndex === i}
+                                onSelect={() => selectPlatform(i)}
+                            />
                         ))}
 
                         {draggingPlatform && draggingPlatform.gameX != null && draggingPlatform.gameY != null && (
@@ -824,8 +897,8 @@ const GameScreen = ({ route, navigation }) => {
                                     top: z.y - z.height / 2,
                                     width: z.width,
                                     height: z.height,
-                                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                                    borderColor: 'rgba(239, 68, 68, 0.3)',
+                                    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                                    borderColor: 'rgba(239, 68, 68, 0.5)',
                                     borderWidth: 1,
                                     borderStyle: 'dashed',
                                     zIndex: 0
@@ -835,14 +908,14 @@ const GameScreen = ({ route, navigation }) => {
 
                         <ParticleSystem ref={particleSystemRef} />
 
-                    </View>
+                    </Pressable>
                 </View>
 
                 {/* 3. Level Complete / Overlay */}
                 {(gameState === 'win' || gameState === 'lose') && (
                     <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
                         <View style={[styles.overlayBox, gameState === 'win' ? styles.winBox : styles.loseBox]}>
-                            {gameState === 'win' ? <><Text style={styles.overlayTxt}>🎉 Complete!</Text><Stars count={stars} size={26} /></> : <Text style={styles.overlayTxt}>💥 Try Again</Text>}
+                            {gameState === 'win' ? <><Text style={styles.overlayTxt}>Level Complete!</Text><Stars count={stars} size={26} /></> : <Text style={styles.overlayTxt}>Level Failed</Text>}
                             <View style={{ flexDirection: 'row', marginTop: 12 }}>
                                 <TouchableOpacity style={[styles.retryBtn, { marginRight: 10 }]} onPress={handleRetry}><Text style={styles.btnTxt}>Retry</Text></TouchableOpacity>
                                 {gameState === 'win' && <TouchableOpacity style={[styles.nextBtn, { marginRight: 0 }]} onPress={handleNext}><Text style={styles.btnTxt}>Next →</Text></TouchableOpacity>}
@@ -859,7 +932,7 @@ const GameScreen = ({ route, navigation }) => {
                             <Text style={{ color: '#e0e0e0', fontSize: 16, textAlign: 'center', marginBottom: 20, lineHeight: 22 }}>
                                 Drag platforms from the top bar to guide the ball to the green goal.
                                 {'\n\n'}
-                                Click drop and see what happens!
+                                Click drop and see the result!
                             </Text>
                             <TouchableOpacity
                                 style={{ backgroundColor: '#3b82f6', paddingHorizontal: 30, paddingVertical: 12, borderRadius: 25 }}
@@ -884,7 +957,7 @@ const GameScreen = ({ route, navigation }) => {
 };
 
 // Component that holds refs to latest p to prevent stale closures
-const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones }) => {
+const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones, isSelected, onSelect }) => {
     const type = PLATFORM_TYPES[p.type] || PLATFORM_TYPES.normal;
     // Match Physics Body W/H
     const W = PHYSICS.platformWidth;
@@ -906,14 +979,16 @@ const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones }) => {
     const TOTAL_H = 50;
 
     const pRef = useRef(p);
+    const onSelectRef = useRef(onSelect);
     useEffect(() => {
         pRef.current = p;
+        onSelectRef.current = onSelect;
         // Sync local tracking refs when not dragging to stay in sync with props
         if (!isDragging.current) {
             posRef.current = { x: p.x, y: p.y };
             angleRef.current = p.angle || 0;
         }
-    }, [p]);
+    }, [p, onSelect]);
 
     // Local state for visual feedback during drag (Red overlay)
     // We can't easily rely on just props because we want immediate feedback
@@ -964,6 +1039,9 @@ const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones }) => {
             onPanResponderGrant: (evt) => {
                 isDragging.current = true;
                 const currentP = pRef.current;
+
+                // Select this platform when it starts being dragged
+                onSelectRef.current?.();
 
                 posRef.current = { x: currentP.x, y: currentP.y };
 
@@ -1180,47 +1258,53 @@ const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones }) => {
                         ]
                     }),
                     borderRadius: 6,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 4,
+                    // Glow effect when selected - uses platform type color
+                    shadowColor: isSelected ? type.color : '#000',
+                    shadowOffset: { width: 0, height: isSelected ? 0 : 2 },
+                    shadowOpacity: isSelected ? 0.8 : 0.3,
+                    shadowRadius: isSelected ? 10 : 4,
+                    // iOS border glow simulation
+                    borderWidth: isSelected ? 2 : 0,
+                    borderColor: isSelected ? type.color : 'transparent',
                 }]}
                 hitSlop={{ top: 30, bottom: 30, left: 10, right: 10 }}
                 {...movePan.panHandlers}
             />
 
-            {/* UI Widgets - Follow finger directly via widgetPan (no LERP lag) */}
-            <Animated.View style={[styles.dragPlat, {
-                transform: [
-                    { translateX: widgetPan.x },
-                    { translateY: widgetPan.y },
-                    { rotate: rotationDeg }
-                ],
-                width: TOTAL_W,
-                height: TOTAL_H,
-                marginLeft: -TOTAL_W / 2,
-                marginTop: -TOTAL_H / 2,
-                zIndex: 10,
-                pointerEvents: 'box-none', // Allow taps to pass through empty areas
-            }]}>
-                {/* Left Handle */}
-                <View style={[styles.rotHandle, { marginRight: 5 }]} {...leftRotPan.panHandlers}>
-                    <Text style={styles.handleTxt}>⟳</Text>
-                </View>
+            {/* UI Widgets - Only show when selected */}
+            {isSelected && (
+                <Animated.View style={[styles.dragPlat, {
+                    transform: [
+                        { translateX: widgetPan.x },
+                        { translateY: widgetPan.y },
+                        { rotate: rotationDeg }
+                    ],
+                    width: TOTAL_W,
+                    height: TOTAL_H,
+                    marginLeft: -TOTAL_W / 2,
+                    marginTop: -TOTAL_H / 2,
+                    zIndex: 10,
+                    pointerEvents: 'box-none', // Allow taps to pass through empty areas
+                }]}>
+                    {/* Left Handle */}
+                    <View style={[styles.rotHandle, { marginRight: 5 }]} {...leftRotPan.panHandlers}>
+                        <Text style={styles.handleTxt}>⟳</Text>
+                    </View>
 
-                {/* Spacer for platform body (rendered separately) */}
-                <View style={{ width: W, height: H }} pointerEvents="none" />
+                    {/* Spacer for platform body (rendered separately) */}
+                    <View style={{ width: W, height: H }} pointerEvents="none" />
 
-                {/* Right Handle */}
-                <View style={[styles.rotHandle, { marginLeft: 5 }]} {...rightRotPan.panHandlers}>
-                    <Text style={styles.handleTxt}>⟲</Text>
-                </View>
+                    {/* Right Handle */}
+                    <View style={[styles.rotHandle, { marginLeft: 5 }]} {...rightRotPan.panHandlers}>
+                        <Text style={styles.handleTxt}>⟲</Text>
+                    </View>
 
-                {/* Remove Button */}
-                <TouchableOpacity style={styles.removeBtn} onPress={() => onRemove(i)}>
-                    <Text style={styles.removeTxt}>×</Text>
-                </TouchableOpacity>
-            </Animated.View>
+                    {/* Remove Button */}
+                    <TouchableOpacity style={styles.removeBtn} onPress={() => onRemove(i)}>
+                        <Text style={styles.removeTxt}>×</Text>
+                    </TouchableOpacity>
+                </Animated.View>
+            )}
         </>
     );
 };

@@ -130,6 +130,9 @@ const Physics = (entities, { time, dispatch }) => {
             if (!spike) return;
 
             balls.forEach(ball => {
+                // Skip if ball was already removed
+                if (!ball || !ball.body) return;
+
                 const { x, y } = ball.body.position;
                 const spikeX = spike.position.x;
                 const spikeY = spike.position.y;
@@ -137,6 +140,18 @@ const Physics = (entities, { time, dispatch }) => {
                 // Hitbox check
                 if (x > spikeX && x < spikeX + spike.size.width &&
                     y > spikeY && y < spikeY + spike.size.height + 5) {
+
+                    // Dispatch hit event for particles and sound
+                    dispatch({
+                        type: 'spike-hit',
+                        position: { x, y },
+                        color: spike.color || '#ef4444' // Default red if no color
+                    });
+
+                    // Remove ball from physics world (makes it disappear)
+                    Matter.World.remove(engine.world, ball.body);
+                    delete entities[ball.key];
+
                     anyBallLost = true;
                 }
             });

@@ -15,6 +15,7 @@ import world3Levels from '../levels/world3';
 import { getLevelProgress } from '../utils/storage';
 import { getNextLevelOrRedirect, getTotalStars } from '../utils/gameLogic';
 import { Alert } from 'react-native';
+import { playMusic } from '../utils/audio';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -34,6 +35,7 @@ const LevelSelectScreen = ({ route, navigation }) => {
     useFocusEffect(
         useCallback(() => {
             getLevelProgress().then(setProgress);
+            playMusic('menu');
         }, [])
     );
 

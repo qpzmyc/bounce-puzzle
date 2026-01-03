@@ -8,11 +8,15 @@ const SETTINGS_KEY = '@bounce_puzzle_settings';
 export const getSettings = async () => {
     try {
         const jsonValue = await AsyncStorage.getItem(SETTINGS_KEY);
-        // Default: { sound: true, haptics: true }
-        return jsonValue != null ? JSON.parse(jsonValue) : { sound: true, haptics: true };
+        // Default: { sound: true, haptics: true, music: true }
+        const defaults = { sound: true, haptics: true, music: true };
+        if (jsonValue != null) {
+            return { ...defaults, ...JSON.parse(jsonValue) };
+        }
+        return defaults;
     } catch (e) {
         console.error("Failed to load settings", e);
-        return { sound: true, haptics: true };
+        return { sound: true, haptics: true, music: true };
     }
 };
 

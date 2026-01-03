@@ -183,7 +183,7 @@ const world2Levels = [
         balls: [{ x: 50, y: 60 }],
         goal: { x: 120, y: 450, width: 40, height: 40 },
         walls: [
-            { x: 200, y: 300, width: 205, height: 10 },
+            { x: 195, y: 300, width: 195, height: 10 },
             { x: 145, y: 430, width: 90, height: 10 },
             { x: 230, y: 430, width: 10, height: 160 },
             { x: 100, y: 400, width: 10, height: 210 },
@@ -191,7 +191,7 @@ const world2Levels = [
         platforms: { normal: 3, sticky: 1, super: 1 },
         spikes: [
             { x: 100, y: 280, width: 100, height: 10, direction: 'up' },
-            { x: 305, y: 295, width: 10, height: 10, direction: 'right' },
+            { x: 295, y: 295, width: 10, height: 10, direction: 'right' },
             { x: 225, y: 310, width: 10, height: 10, direction: 'down' },
             { x: 225, y: 335, width: 10, height: 10, direction: 'up' },
             { x: 105, y: 410, width: 85, height: 10, direction: 'up' },
@@ -559,7 +559,7 @@ const world2Levels = [
     {
         id: 221,
         name: 'Speedway',
-        requiredStars: 119,
+        requiredStars: 126,
         balls: [{ x: 50, y: 50 }],
         goal: { x: 280, y: 450, width: 40, height: 40 },
         walls: [
@@ -581,9 +581,9 @@ const world2Levels = [
     {
         id: 222,
         name: 'Reverse Loop',
-        requiredStars: 127,
+        requiredStars: 129,
         balls: [{ x: 150, y: 375 }],
-        goal: { x: 120, y: 270, width: 40, height: 40 },
+        goal: { x: 120, y: 260, width: 40, height: 40 },
         fans: [
             { x: 20, y: 150, width: 40, height: 40, direction: 'right' },
             { x: 20, y: 350, width: 40, height: 40, direction: 'right' },
@@ -602,27 +602,33 @@ const world2Levels = [
     },
     {
         id: 223,
-        name: 'Grand Finale W2',
-        requiredStars: 135,
-        balls: [{ x: 50, y: 50 }, { x: 300, y: 50 }],
-        goal: { x: 175, y: 300, width: 50, height: 50 }, // Center
+        name: 'Mirror Collision',
+        balls: [{ x: 265, y: 275 }, { x: 75, y: 275 }, { x: 80, y: 165 }, { x: 260, y: 165 }],
+        goal: { x: 180, y: 400, width: 100, height: 40 },
         walls: [
-            { x: 175, y: 300, width: 60, height: 60 }, // Goal is INSIDE a box? No...
-            // Let's make it a platform in the void.
+            { x: 170, y: 300, width: 10, height: 200 },
+            { x: 170, y: 475, width: 10, height: 70 },
+            { x: 170, y: 80, width: 10, height: 160 },
+            { x: 260, y: 180, width: 40, height: 10 },
+            { x: 80, y: 180, width: 40, height: 10 },
+            { x: 245, y: 170, width: 10, height: 20 },
+            { x: 95, y: 170, width: 10, height: 20 },
         ],
-        // Actually, let's create a "VS" feel. Two sides.
-        noPlaceZones: [
-            { x: 175, y: 300, width: 100, height: 100 }
-        ],
-        fans: [
-            { x: 175, y: 500, width: 40, height: 40, direction: 'up' } // Center updraft
-        ],
+        platforms: { normal: 1, sticky: 1, super: 3 },
         spikes: [
-            { x: 100, y: 500, width: 80, height: 10, direction: 'up' },
-            { x: 250, y: 500, width: 80, height: 10, direction: 'up' },
+            { x: 180, y: 200, width: 10, height: 15, direction: 'right' },
+            { x: 150, y: 200, width: 10, height: 15, direction: 'left' },
+            { x: 180, y: 0, width: 10, height: 155, direction: 'right' },
+            { x: 150, y: 0, width: 10, height: 155, direction: 'left' },
+            { x: 165, y: 185, width: 10, height: 10, direction: 'up' },
+            { x: 165, y: 165, width: 10, height: 10, direction: 'down' },
         ],
-        platforms: { normal: 3, sticky: 2, super: 2 },
-    }
+        fans: [],
+        noPlaceZones: [
+            { x: 170, y: 120, width: 340, height: 240 },
+
+        ]
+    },
 ];
 
 export default world2Levels;
