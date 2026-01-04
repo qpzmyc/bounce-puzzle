@@ -123,16 +123,28 @@ export const saveBonusStars = async (count) => {
 export const getAdState = async () => {
     try {
         const jsonValue = await AsyncStorage.getItem(ADS_KEY);
-        // Default: { difficultyScore: 0, lastAdTimestamp: Date.now() }
+        // Schema: { difficultyScore: 0, elapsedPlayTimeMs: 0, lastActiveTimestamp: Date.now() }
+        // elapsedPlayTimeMs accumulates only while app is in foreground
         if (jsonValue != null) {
-            return JSON.parse(jsonValue);
+            const parsed = JSON.parse(jsonValue);
+            // Migration: if old schema had lastAdTimestamp, convert to new schema
+            if ('lastAdTimestamp' in parsed && !('elapsedPlayTimeMs' in parsed)) {
+                const migrated = {
+                    difficultyScore: parsed.difficultyScore || 0,
+                    elapsedPlayTimeMs: 0,
+                    lastActiveTimestamp: Date.now()
+                };
+                await AsyncStorage.setItem(ADS_KEY, JSON.stringify(migrated));
+                return migrated;
+            }
+            return parsed;
         }
-        const initial = { difficultyScore: 0, lastAdTimestamp: Date.now() };
+        const initial = { difficultyScore: 0, elapsedPlayTimeMs: 0, lastActiveTimestamp: Date.now() };
         await AsyncStorage.setItem(ADS_KEY, JSON.stringify(initial));
         return initial;
     } catch (e) {
         console.error("Failed to load ad state", e);
-        return { difficultyScore: 0, lastAdTimestamp: Date.now() };
+        return { difficultyScore: 0, elapsedPlayTimeMs: 0, lastActiveTimestamp: Date.now() };
     }
 };
 

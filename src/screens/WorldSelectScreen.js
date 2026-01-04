@@ -10,7 +10,7 @@ import {
 import StyledModal from '../components/StyledModal';
 import { useFocusEffect } from '@react-navigation/native';
 import { getLevelProgress } from '../utils/storage';
-import { playMusic } from '../utils/audio';
+import { playMusic, playButtonClick } from '../utils/audio';
 import world1Levels from '../levels';
 import world2Levels from '../levels/world2';
 import { COLORS } from '../utils/constants';
@@ -72,6 +72,7 @@ const WorldSelectScreen = ({ navigation }) => {
     };
 
     const handleWorldSelect = (worldId) => {
+        playButtonClick();
         if (!isWorldUnlocked(worldId)) {
             setLockedModal({ visible: true });
             return;
@@ -84,7 +85,7 @@ const WorldSelectScreen = ({ navigation }) => {
             <View style={styles.header}>
                 <TouchableOpacity
                     style={styles.backButton}
-                    onPress={() => navigation.navigate('Menu')}
+                    onPress={() => { playButtonClick(); navigation.navigate('Menu'); }}
                 >
                     <Text style={styles.backButtonText}>←</Text>
                 </TouchableOpacity>
@@ -126,7 +127,7 @@ const WorldSelectScreen = ({ navigation }) => {
                 icon="🔒"
                 accentColor="#ef4444"
                 buttons={[
-                    { text: "Got it", onPress: () => setLockedModal({ visible: false }) }
+                    { text: "Got it", onPress: () => { playButtonClick(); setLockedModal({ visible: false }); } }
                 ]}
                 onClose={() => setLockedModal({ visible: false })}
             />

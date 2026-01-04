@@ -107,19 +107,69 @@ export const recordLevelCompletion = async (difficultyPoints) => {
 };
 
 /**
+ * Updates elapsed play time since last active timestamp.
+ * Call this before checking if ad should show.
+ */
+export const updateElapsedTime = async () => {
+    try {
+        const state = await getAdState();
+        const now = Date.now();
+        const additionalTime = now - (state.lastActiveTimestamp || now);
+
+        const newState = {
+            ...state,
+            elapsedPlayTimeMs: (state.elapsedPlayTimeMs || 0) + additionalTime,
+            lastActiveTimestamp: now
+        };
+        await saveAdState(newState);
+        return newState;
+    } catch (e) {
+        console.error("Error updating elapsed time", e);
+        return null;
+    }
+};
+
+/**
+ * Called when app goes to background - freezes the timer.
+ */
+export const onAppBackground = async () => {
+    try {
+        // Update elapsed time one last time, then we stop accumulating
+        await updateElapsedTime();
+    } catch (e) {
+        console.error("Error on app background", e);
+    }
+};
+
+/**
+ * Called when app comes to foreground - resumes the timer.
+ */
+export const onAppForeground = async () => {
+    try {
+        const state = await getAdState();
+        // Reset lastActiveTimestamp to now (start counting again)
+        const newState = {
+            ...state,
+            lastActiveTimestamp: Date.now()
+        };
+        await saveAdState(newState);
+    } catch (e) {
+        console.error("Error on app foreground", e);
+    }
+};
+
+/**
  * Checks if an ad should be triggered based on thresholds.
  * @returns {Promise<'SCORE' | 'TIME' | null>} Returns the reason for triggering, or null.
  */
 export const shouldShowAd = async () => {
     try {
-        const state = await getAdState();
-        const now = Date.now();
-        const timeElapsed = now - (state.lastAdTimestamp || 0);
+        // First update elapsed time to current
+        const state = await updateElapsedTime();
+        if (!state) return null;
 
         const scoreTrigger = (state.difficultyScore || 0) >= DIFFICULTY_THRESHOLD;
-        const timeTrigger = timeElapsed >= TIME_THRESHOLD_MS;
-
-
+        const timeTrigger = (state.elapsedPlayTimeMs || 0) >= TIME_THRESHOLD_MS;
 
         if (scoreTrigger) return 'SCORE';
         if (timeTrigger) return 'TIME';
@@ -148,10 +198,11 @@ export const resolveAdTrigger = async (reason) => {
             newScore = Math.max(0, newScore - 10);
         }
 
-        // Time always resets
+        // Reset elapsed play time back to 0 (timer restarts)
         const newState = {
             difficultyScore: newScore,
-            lastAdTimestamp: Date.now()
+            elapsedPlayTimeMs: 0,
+            lastActiveTimestamp: Date.now()
         };
         await saveAdState(newState);
     } catch (e) {

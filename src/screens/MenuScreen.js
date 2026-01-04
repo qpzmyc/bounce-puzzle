@@ -18,7 +18,7 @@ import { getNextLevelOrRedirect, getTotalStars } from '../utils/gameLogic';
 import levels from '../levels'; // This is likely world1Levels
 import world2Levels from '../levels/world2';
 import world3Levels from '../levels/world3';
-import { setSoundEnabled, setMusicEnabled, playMusic, stopMusic, pauseMusic, resumeMusic } from '../utils/audio';
+import { setSoundEnabled, setMusicEnabled, playMusic, stopMusic, pauseMusic, resumeMusic, playButtonClick } from '../utils/audio';
 import { showRewardedAd } from '../utils/ads';
 import StyledModal from '../components/StyledModal';
 
@@ -91,10 +91,12 @@ const MenuScreen = ({ navigation }) => {
     }, []);
 
     const handlePlay = () => {
+        playButtonClick();
         navigation.navigate('WorldSelect');
     };
 
     const handleQuickPlay = () => {
+        playButtonClick();
         // Determine the "furthest" unlocked world
         const lastLevelW1 = levels[levels.length - 1];
         const lastLevelW2 = world2Levels[world2Levels.length - 1];
@@ -123,6 +125,7 @@ const MenuScreen = ({ navigation }) => {
     };
 
     const toggleSetting = (key) => {
+        playButtonClick();
         const newValue = !settings[key];
         const newSettings = { ...settings, [key]: newValue };
         setSettings(newSettings);
@@ -180,6 +183,7 @@ const MenuScreen = ({ navigation }) => {
     };
 
     const handleReset = () => {
+        playButtonClick();
         Alert.alert(
             "Reset Progress",
             "Are you sure you want to delete all progress? This cannot be undone.",
@@ -201,6 +205,7 @@ const MenuScreen = ({ navigation }) => {
     };
 
     const handleUnlockAll = async () => {
+        playButtonClick();
         Alert.alert(
             "Unlock All Levels",
             "This will mark all levels as completed with 3 stars. Great for testing!",
@@ -222,6 +227,7 @@ const MenuScreen = ({ navigation }) => {
     };
 
     const handleWatchAdReward = async () => {
+        playButtonClick();
         // Pause music before showing ad
         pauseMusic();
 
@@ -257,7 +263,7 @@ const MenuScreen = ({ navigation }) => {
             {/* Bonus Stars Counter (Purple - Clickable for Ad) */}
             <TouchableOpacity
                 style={styles.bonusStarCounter}
-                onPress={() => setBonusAdModal(true)}
+                onPress={() => { playButtonClick(); setBonusAdModal(true); }}
             >
                 <Text style={styles.bonusStarIcon}>★</Text>
                 <Text style={styles.starText}>{bonusStars}</Text>
@@ -296,7 +302,7 @@ const MenuScreen = ({ navigation }) => {
                         <Text style={styles.levelsButtonText}>Select World</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.settingsButton} onPress={() => setSettingsVisible(true)}>
+                    <TouchableOpacity style={styles.settingsButton} onPress={() => { playButtonClick(); setSettingsVisible(true); }}>
                         <Text style={styles.settingsButtonText}>Settings</Text>
                     </TouchableOpacity>
                 </View>
@@ -351,7 +357,7 @@ const MenuScreen = ({ navigation }) => {
                         </TouchableOpacity>
 
                         {/* Close */}
-                        <TouchableOpacity style={styles.closeBtn} onPress={() => setSettingsVisible(false)}>
+                        <TouchableOpacity style={styles.closeBtn} onPress={() => { playButtonClick(); setSettingsVisible(false); }}>
                             <Text style={styles.closeBtnTxt}>Close</Text>
                         </TouchableOpacity>
                     </View>
@@ -366,7 +372,7 @@ const MenuScreen = ({ navigation }) => {
                 icon="✨"
                 accentColor="#a855f7"
                 buttons={[
-                    { text: "Later", style: 'cancel', onPress: () => setBonusAdModal(false) },
+                    { text: "Later", style: 'cancel', onPress: () => { playButtonClick(); setBonusAdModal(false); } },
                     {
                         text: "Watch Ad", onPress: () => {
                             setBonusAdModal(false);
@@ -389,7 +395,7 @@ const MenuScreen = ({ navigation }) => {
                 icon="🎉"
                 accentColor="#22c55e"
                 buttons={[
-                    { text: "Awesome!", onPress: () => setRewardModal(false) }
+                    { text: "Awesome!", onPress: () => { playButtonClick(); setRewardModal(false); } }
                 ]}
                 onClose={() => setRewardModal(false)}
             />

@@ -21,7 +21,7 @@ import world3Levels from '../levels/world3';
 import { getLevelProgress, saveLevelProgress, getSettings, getBonusStars, saveBonusStars, hasEnteredWorld, markWorldEntered } from '../utils/storage';
 import { getTotalStars, getNextLevelOrRedirect } from '../utils/gameLogic';
 import * as Haptics from 'expo-haptics';
-import { loadSounds, playSound, unloadSounds, setSoundEnabled, playMusic, stopMusic, pauseMusic, resumeMusic } from '../utils/audio';
+import { loadSounds, playSound, unloadSounds, setSoundEnabled, playMusic, stopMusic, pauseMusic, resumeMusic, playButtonClick } from '../utils/audio';
 import { recordLevelCompletion, shouldShowAd, showInterstitialAd, resolveAdTrigger, showRewardedAd } from '../utils/ads';
 import { BannerAd, BannerAdSize, TestIds } from '../utils/ads';
 import StyledModal from '../components/StyledModal';
@@ -65,12 +65,12 @@ const screenToGameCoords = (touchX, touchY, scale, layoutOverride = null) => {
         gameAreaBottom = gameAreaTop + GAME.height * scale;
     }
 
-    const gameX = Math.max(PHYSICS.platformWidth / 2,
-        Math.min(GAME.width - PHYSICS.platformWidth / 2,
-            (touchX - gameAreaLeft) / scale));
-    const gameY = Math.max(PHYSICS.platformHeight / 2,
-        Math.min(GAME.height - PHYSICS.platformHeight / 2,
-            (touchY - gameAreaTop) / scale));
+    // Simplified: Just convert coords, let caller handle specific bounds (like platform limits)
+    // However, we should probably keep it within the game area loosely?
+    // Actually, DraggablePlatform does its own robust clamping.
+    // Let's just return the raw converted coordinate.
+    const gameX = (touchX - gameAreaLeft) / scale;
+    const gameY = (touchY - gameAreaTop) / scale;
 
     // Check bounds
     let isInBounds = touchX >= gameAreaLeft - 20 && touchX <= gameAreaRight + 20 &&
@@ -156,6 +156,17 @@ const GameScreen = ({ route, navigation }) => {
     const availH = SH - insets.top - insets.bottom - headerReserved - footerReserved;
     const scale = Math.min(availW / GAME.width, availH / GAME.height);
 
+    // Calculate theoretical layout as robust fallback
+    const theoreticalY = insets.top + headerReserved + (availH - GAME.height * scale) / 2;
+    const theoreticalX = (SW - GAME.width * scale) / 2; // Assuming centered
+
+    // Use state for layout to ensure re-renders when measurement completes
+    const [gameLayout, setGameLayout] = useState({
+        x: theoreticalX,
+        y: theoreticalY,
+        width: GAME.width * scale,
+        height: GAME.height * scale
+    });
     const [gameState, setGameState] = useState('setup'); // 'setup', 'playing', 'win', 'lose'
     const [placedPlatforms, setPlacedPlatforms] = useState([]);
     const [entities, setEntities] = useState(null);
@@ -501,6 +512,7 @@ const GameScreen = ({ route, navigation }) => {
     const levelFailedTimeoutRef = useRef(null); // Track timeout to clear it on retry
 
     const handleDrop = () => {
+        playButtonClick();
         if (gameState !== 'setup') return;
         isPlayingRef.current = true; // Mark game as active
         setGameState('playing');
@@ -510,6 +522,7 @@ const GameScreen = ({ route, navigation }) => {
     };
 
     const handleRetry = async () => {
+        playButtonClick();
         // Fix: Save current trail if we are interrupting a live game
         if (gameState === 'playing' && entities?.trail?.points) {
             setLastTrail([...entities.trail.points]);
@@ -545,6 +558,7 @@ const GameScreen = ({ route, navigation }) => {
 
 
     const handleNext = async () => {
+        playButtonClick();
         setLastTrail([]);  // Clear trail when moving to next level
         setLiveTrail([]);
         isPlayingRef.current = false;
@@ -605,6 +619,7 @@ const GameScreen = ({ route, navigation }) => {
     };
 
     const handleBack = async () => {
+        playButtonClick();
         isPlayingRef.current = false; // Stop listening to game events
 
         // Check if we should show an ad before exiting
@@ -757,34 +772,49 @@ const GameScreen = ({ route, navigation }) => {
     const handleDragStart = React.useCallback((type, evt) => {
         const touchX = evt.nativeEvent.pageX;
         const touchY = evt.nativeEvent.pageY;
-        const gamePos = screenToGameCoords(touchX, touchY, scale);
+        // Pass accurate gameLayout to ensure coords match the visual board
+        const gamePos = screenToGameCoords(touchX, touchY, scale, gameLayout);
 
         // Add Y offset so platform appears ABOVE finger for better visibility
         const bankDragOffsetY = -50;
-        const offsetGameY = Math.max(PHYSICS.platformHeight / 2, gamePos.gameY + bankDragOffsetY);
+        const offsetGameY = gamePos.gameY + bankDragOffsetY; // Removed clamp to prevent snap-to-top glitch
+
+        // Clamp start position to stay on screen (horizontally and top)
+        const halfW = PHYSICS.platformWidth / 2;
+        const halfH = PHYSICS.platformHeight / 2;
+
+        let clampedX = Math.max(halfW, Math.min(GAME.width - halfW, gamePos.gameX));
+        let clampedY = offsetGameY; // Reverted top clamping as requested
 
         // Reset drag ref to touch position (with offset) to start fresh
         // Also track maxY to know if we ever entered the game area
         // AND track moveCount to detect "tap" vs "drag" (hysteresis)
-        dragPosRef.current = { x: gamePos.gameX, y: offsetGameY, maxY: offsetGameY, moveCount: 0 };
+        dragPosRef.current = { x: clampedX, y: clampedY, maxY: clampedY, moveCount: 0 };
 
         // Bank drag always starts with 0 rotation
-        const isValid = gamePos.isInBounds && isPlacementValid(gamePos.gameX, offsetGameY, 0, level.noPlaceZones);
-        setDraggingPlatform({ type, gameX: gamePos.gameX, gameY: offsetGameY, isValid });
-    }, [level, scale]);
+        // Bank drag always starts with 0 rotation
+        const isValid = gamePos.isInBounds && isPlacementValid(clampedX, clampedY, 0, level.noPlaceZones);
+        setDraggingPlatform({ type, gameX: clampedX, gameY: clampedY, isValid });
+    }, [level, scale, gameLayout]);
 
     const handleDragMove = React.useCallback((type, evt) => {
         const touchX = evt.nativeEvent.pageX;
         const touchY = evt.nativeEvent.pageY;
-        const targetPos = screenToGameCoords(touchX, touchY, scale);
+        const targetPos = screenToGameCoords(touchX, touchY, scale, gameLayout);
 
         // Add Y offset so platform appears ABOVE finger for better visibility
         const bankDragOffsetY = -50;
         let targetX = targetPos.gameX;
         let targetY = targetPos.gameY + bankDragOffsetY;
 
-        // NO CLAMPING during bank drag - let it go anywhere
-        // but snap TARGET to 2px grid for smooth movement visual
+        // Clamp target position (horizontally and top)
+        const halfW = PHYSICS.platformWidth / 2;
+        const halfH = PHYSICS.platformHeight / 2;
+
+        targetX = Math.max(halfW, Math.min(GAME.width - halfW, targetX));
+        // targetY = Math.max(halfH, targetY); // Reverted top clamping as requested
+
+        // Snap TARGET to 2px grid for smooth movement visual
         const snapTargetX = Math.round(targetX / 2) * 2;
         const snapTargetY = Math.round(targetY / 2) * 2;
 
@@ -819,7 +849,7 @@ const GameScreen = ({ route, navigation }) => {
             gameY: newY,
             isValid: inBounds && isPlacementValid(newX, newY, 0, level.noPlaceZones)
         });
-    }, [level, scale]);
+    }, [level, scale, gameLayout]);
 
     const handleDragRelease = React.useCallback((type, evt) => {
         const gameX = dragPosRef.current.x;
@@ -930,14 +960,30 @@ const GameScreen = ({ route, navigation }) => {
                 <View
                     ref={gameAreaRef}
                     style={[styles.gameWrap, { width: GAME.width * scale, height: GAME.height * scale }]}
-                    onLayout={(event) => {
-                        event.target.measureInWindow((x, y, width, height) => {
-                            measuredGameAreaLayout = { x, y, width, height };
+                    collapsable={false}
+                    onLayout={() => {
+                        gameAreaRef.current?.measure((x, y, width, height, pageX, pageY) => {
+                            // Update state with precise measurement
+                            setGameLayout({ x: pageX, y: pageY, width, height });
+                            // Keep global for fallback/legacy helper access if needed
+                            measuredGameAreaLayout = { x: pageX, y: pageY, width, height };
                         });
                     }}
                 >
                     <Pressable
-                        style={{ width: GAME.width, height: GAME.height, transform: [{ scale }], transformOrigin: 'top left', backgroundColor: '#0a0a18' }}
+                        style={{
+                            width: GAME.width,
+                            height: GAME.height,
+                            // transformOrigin not consistently supported in RN, emulate 'top left' scaling manually:
+                            // 1. Scale shrinks towards center, creating offset of (Side - Side*Scale)/2
+                            // 2. We translate negatively to pull (0,0) back to top-left
+                            transform: [
+                                { translateX: -(GAME.width * (1 - scale)) / 2 },
+                                { translateY: -(GAME.height * (1 - scale)) / 2 },
+                                { scale }
+                            ],
+                            backgroundColor: '#0a0a18'
+                        }}
                         onPress={() => { if (gameState === 'setup') clearSelection(); }}
                     >
                         {entities && <GameEngine ref={gameEngineRef} style={{ width: GAME.width, height: GAME.height }} systems={[Physics]} entities={entities} running={gameState === 'playing' && isFocused} onEvent={handleEvent} />}
@@ -952,6 +998,7 @@ const GameScreen = ({ route, navigation }) => {
                                 p={p}
                                 i={i}
                                 scale={scale}
+                                gameLayout={gameLayout} // Pass layout explicitly
                                 onUpdate={updatePlatform}
                                 onRemove={removePlatform}
                                 zones={level.noPlaceZones}
@@ -1085,7 +1132,7 @@ const GameScreen = ({ route, navigation }) => {
 };
 
 // Component that holds refs to latest p to prevent stale closures
-const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones, isSelected, onSelect }) => {
+const DraggablePlatform = ({ p, i, scale, gameLayout, onUpdate, onRemove, zones, isSelected, onSelect }) => {
     const type = PLATFORM_TYPES[p.type] || PLATFORM_TYPES.normal;
     // Match Physics Body W/H
     const W = PHYSICS.platformWidth;
@@ -1289,11 +1336,11 @@ const DraggablePlatform = ({ p, i, scale, onUpdate, onRemove, zones, isSelected,
             const touchX = evt.nativeEvent.pageX;
             const touchY = evt.nativeEvent.pageY;
 
-            // Convert platform center to screen coords using reverse of screenToGameCoords
-            // This is approximate but works for rotation
-            const gameLayout = measuredGameAreaLayout || { x: 0, y: 140, width: GAME.width * scale, height: GAME.height * scale };
-            const screenPlatX = gameLayout.x + platX * scale;
-            const screenPlatY = gameLayout.y + platY * scale;
+            // Convert platform center to screen coords using explicit layout prop
+            // Fallback to global or hardcoded if prop missing (shouldn't happen with new logic)
+            const layout = gameLayout || measuredGameAreaLayout || { x: 0, y: 140 };
+            const screenPlatX = layout.x + platX * scale;
+            const screenPlatY = layout.y + platY * scale;
 
             // Calculate angle from platform center to finger
             const fingerAngle = Math.atan2(touchY - screenPlatY, touchX - screenPlatX);

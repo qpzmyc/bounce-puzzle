@@ -15,7 +15,7 @@ import world3Levels from '../levels/world3';
 import { getLevelProgress } from '../utils/storage';
 import { getNextLevelOrRedirect, getTotalStars } from '../utils/gameLogic';
 import { Alert } from 'react-native';
-import { playMusic, pauseMusic, resumeMusic } from '../utils/audio';
+import { playMusic, pauseMusic, resumeMusic, playButtonClick } from '../utils/audio';
 import { getBonusStars, saveBonusStars } from '../utils/storage';
 import { showRewardedAd } from '../utils/ads';
 import StyledModal from '../components/StyledModal';
@@ -47,6 +47,7 @@ const LevelSelectScreen = ({ route, navigation }) => {
     );
 
     const handleLevelSelect = (levelId) => {
+        playButtonClick();
         const level = levels.find(l => l.id === levelId);
         const totalStars = getTotalStars(progress, bonusStars);
 
@@ -58,6 +59,7 @@ const LevelSelectScreen = ({ route, navigation }) => {
     };
 
     const handleWatchAdReward = async (required, current) => {
+        playButtonClick();
         pauseMusic();
         const earned = await showRewardedAd();
         resumeMusic();
@@ -121,7 +123,7 @@ const LevelSelectScreen = ({ route, navigation }) => {
             <View style={styles.header}>
                 <TouchableOpacity
                     style={styles.backButton}
-                    onPress={() => navigation.navigate('WorldSelect')}
+                    onPress={() => { playButtonClick(); navigation.navigate('WorldSelect'); }}
                 >
                     <Text style={styles.backButtonText}>←</Text>
                 </TouchableOpacity>
@@ -175,7 +177,7 @@ const LevelSelectScreen = ({ route, navigation }) => {
                 icon="🔒"
                 accentColor="#f59e0b"
                 buttons={[
-                    { text: "Cancel", style: 'cancel', onPress: () => setLockedModal({ ...lockedModal, visible: false }) },
+                    { text: "Cancel", style: 'cancel', onPress: () => { playButtonClick(); setLockedModal({ ...lockedModal, visible: false }); } },
                     {
                         text: "Watch Ad", onPress: () => {
                             setLockedModal({ ...lockedModal, visible: false });
@@ -198,6 +200,7 @@ const LevelSelectScreen = ({ route, navigation }) => {
                 buttons={[
                     {
                         text: "Awesome!", onPress: () => {
+                            playButtonClick();
                             setRewardModal({ ...rewardModal, visible: false });
                             // If unlocked, we could auto-navigate, but letting user choose is better
                             if (rewardModal.title === "Success!") {

@@ -126,30 +126,45 @@ const world2Levels = [
 
         ]
     },
+
     {
         id: 206,
-        name: 'Against the Wind',
-        difficulty: 5,
-        balls: [{ x: 250, y: 350 }],
-        goal: { x: 290, y: 180, width: 40, height: 40 },
+        name: 'Stairs',
+        difficulty: 4,
+        balls: [{ x: 45, y: 90 }],
+        goal: { x: 15, y: 450, width: 40, height: 40 },
         walls: [
-            { x: 250, y: 280, width: 200, height: 10 },
-            { x: 135, y: 450, width: 50, height: 10 },
+            { x: 125, y: 165, width: 10, height: 60 },
+            { x: 150, y: 190, width: 60, height: 10 },
+            { x: 175, y: 215, width: 10, height: 60 },
+            { x: 200, y: 240, width: 60, height: 10 },
+            { x: 225, y: 265, width: 10, height: 60 },
+            { x: 175, y: 0, width: 350, height: 10 },
+            { x: 130, y: 290, width: 260, height: 10 },
+            { x: 100, y: 140, width: 60, height: 10 },
+            { x: 75, y: 215, width: 10, height: 150 },
+            { x: 180, y: 80, width: 10, height: 150 },
+            { x: 230, y: 105, width: 10, height: 200 },
+            { x: 280, y: 130, width: 10, height: 250 },
+            { x: 180, y: 315, width: 10, height: 50 },
+            { x: 180, y: 450, width: 10, height: 120 },
         ],
-        platforms: { normal: 1, sticky: 0, super: 3 },
+        platforms: { normal: 1, sticky: 4, super: 1 },
         spikes: [
-            { x: 110, y: 430, width: 50, height: 10, direction: 'up' },
+            { x: 210, y: 5, width: 10, height: 200, direction: 'left' },
+            { x: 160, y: 5, width: 10, height: 150, direction: 'left' },
+            { x: 260, y: 5, width: 10, height: 250, direction: 'left' },
+            { x: 175, y: 375, width: 10, height: 10, direction: 'up' },
+            { x: 175, y: 345, width: 10, height: 10, direction: 'down' },
         ],
         fans: [
-            { x: 110, y: 10, width: 40, height: 40, direction: 'down' },
-            { x: 280, y: 230, width: 40, height: 40, direction: 'left' },
-            { x: 10, y: 180, width: 40, height: 40, direction: 'right' },
+            { x: 15, y: 240, width: 40, height: 40, direction: 'right' },
+            { x: 15, y: 190, width: 40, height: 40, direction: 'right' },
+            { x: 15, y: 140, width: 40, height: 40, direction: 'right' },
+            { x: 15, y: 90, width: 40, height: 40, direction: 'right' },
         ],
-        noPlaceZones: [
-            { x: 175, y: 325, width: 346, height: 76 },
-        ]
+        noPlaceZones: []
     },
-
     {
         id: 207,
         name: 'Spike Field',
@@ -284,41 +299,26 @@ const world2Levels = [
     },
     {
         id: 212,
-        name: 'Stairs',
-        difficulty: 4,
-        balls: [{ x: 45, y: 90 }],
-        goal: { x: 15, y: 450, width: 40, height: 40 },
+        name: 'Against the Wind',
+        difficulty: 5,
+        balls: [{ x: 250, y: 350 }],
+        goal: { x: 290, y: 180, width: 40, height: 40 },
         walls: [
-            { x: 125, y: 165, width: 10, height: 60 },
-            { x: 150, y: 190, width: 60, height: 10 },
-            { x: 175, y: 215, width: 10, height: 60 },
-            { x: 200, y: 240, width: 60, height: 10 },
-            { x: 225, y: 265, width: 10, height: 60 },
-            { x: 175, y: 0, width: 350, height: 10 },
-            { x: 130, y: 290, width: 260, height: 10 },
-            { x: 100, y: 140, width: 60, height: 10 },
-            { x: 75, y: 215, width: 10, height: 150 },
-            { x: 180, y: 80, width: 10, height: 150 },
-            { x: 230, y: 105, width: 10, height: 200 },
-            { x: 280, y: 130, width: 10, height: 250 },
-            { x: 180, y: 315, width: 10, height: 50 },
-            { x: 180, y: 450, width: 10, height: 120 },
+            { x: 250, y: 280, width: 200, height: 10 },
+            { x: 135, y: 450, width: 50, height: 10 },
         ],
-        platforms: { normal: 1, sticky: 4, super: 1 },
+        platforms: { normal: 1, sticky: 0, super: 3 },
         spikes: [
-            { x: 210, y: 5, width: 10, height: 200, direction: 'left' },
-            { x: 160, y: 5, width: 10, height: 150, direction: 'left' },
-            { x: 260, y: 5, width: 10, height: 250, direction: 'left' },
-            { x: 175, y: 375, width: 10, height: 10, direction: 'up' },
-            { x: 175, y: 345, width: 10, height: 10, direction: 'down' },
+            { x: 110, y: 430, width: 50, height: 10, direction: 'up' },
         ],
         fans: [
-            { x: 15, y: 240, width: 40, height: 40, direction: 'right' },
-            { x: 15, y: 190, width: 40, height: 40, direction: 'right' },
-            { x: 15, y: 140, width: 40, height: 40, direction: 'right' },
-            { x: 15, y: 90, width: 40, height: 40, direction: 'right' },
+            { x: 110, y: 10, width: 40, height: 40, direction: 'down' },
+            { x: 280, y: 230, width: 40, height: 40, direction: 'left' },
+            { x: 10, y: 180, width: 40, height: 40, direction: 'right' },
         ],
-        noPlaceZones: []
+        noPlaceZones: [
+            { x: 175, y: 325, width: 346, height: 76 },
+        ]
     },
     {
         id: 213,
@@ -359,19 +359,20 @@ const world2Levels = [
             { x: 240, y: 220, width: 215, height: 10 },
             { x: 225, y: 355, width: 10, height: 190 },
         ],
-        platforms: { normal: 2, sticky: 0, super: 2 },
+        platforms: { normal: 1, sticky: 1, super: 2 },
         spikes: [
             { x: 80, y: 425, width: 140, height: 10, direction: 'up' },
             { x: 250, y: 200, width: 85, height: 10, direction: 'up' },
             { x: 50, y: 80, width: 10, height: 260, direction: 'left' },
             { x: 220, y: 245, width: 10, height: 10, direction: 'up' },
+            { x: 235, y: 260, width: 10, height: 170, direction: 'right' },
         ],
         fans: [
             { x: 40, y: 505, width: 40, height: 40, direction: 'up' },
             { x: 5, y: 505, width: 40, height: 40, direction: 'up' },
         ],
         noPlaceZones: [
-            { x: 175, y: 415, width: 345, height: 150 },
+            { x: 115, y: 415, width: 225, height: 150 },
             { x: 175, y: 155, width: 345, height: 140 },
         ]
     },
@@ -383,18 +384,18 @@ const world2Levels = [
         goal: { x: 185, y: 480, width: 20, height: 20 },
         walls: [
             { x: 200, y: 80, width: 280, height: 10 },
-            { x: 97.5, y: 140, width: 50, height: 10 },
+            { x: 112.5, y: 140, width: 80, height: 10 },
             { x: 40, y: 205, width: 70, height: 10 },
             { x: 77.5, y: 172.5, width: 10, height: 75 },
             { x: 260, y: 165, width: 10, height: 80 },
             { x: 195, y: 205, width: 140, height: 10 },
             { x: 100, y: 205, width: 60, height: 10 },
-            { x: 120, y: 172.5, width: 10, height: 75 },
+            { x: 150, y: 172.5, width: 10, height: 75 },
             { x: 230, y: 290, width: 210, height: 10 },
             { x: 165, y: 450, width: 10, height: 120 },
             { x: 225, y: 450, width: 10, height: 120 },
         ],
-        platforms: { normal: 2, sticky: 3, super: 3 },
+        platforms: { normal: 2, sticky: 2, super: 3 },
         spikes: [
             { x: 240, y: 130, width: 10, height: 60, direction: 'left' },
             { x: 60, y: 90, width: 170, height: 10, direction: 'down' },
@@ -407,7 +408,7 @@ const world2Levels = [
             { x: 125, y: 270, width: 50, height: 10, direction: 'up' },
             { x: 215, y: 270, width: 120, height: 10, direction: 'up' },
             { x: 5, y: 215, width: 140, height: 10, direction: 'down' },
-            { x: 125, y: 185, width: 120, height: 10, direction: 'up' },
+            { x: 155, y: 185, width: 90, height: 10, direction: 'up' },
         ],
         fans: [
             { x: 10, y: 340, width: 40, height: 40, direction: 'right' },
@@ -506,9 +507,7 @@ const world2Levels = [
             { x: 5, y: 145, width: 70, height: 10, direction: 'up' },
         ],
         fans: [],
-        noPlaceZones: [
-            { x: 255, y: 255, width: 185, height: 500 },
-        ]
+        noPlaceZones: []
     },
     {
         id: 219,
@@ -522,7 +521,7 @@ const world2Levels = [
             { x: 175, y: 0, width: 350, height: 10 },
             { x: 290, y: 340, width: 90, height: 10 },
         ],
-        platforms: { normal: 2, sticky: 1, super: 2 },
+        platforms: { normal: 2, sticky: 0, super: 2 },
         spikes: [
             { x: 245, y: 350, width: 90, height: 10, direction: 'down' },
         ],
@@ -580,7 +579,7 @@ const world2Levels = [
         id: 221,
         name: 'Speedway',
         difficulty: 7,
-        requiredStars: 126,
+        requiredStars: 127,
         balls: [{ x: 50, y: 50 }],
         goal: { x: 280, y: 450, width: 40, height: 40 },
         walls: [
@@ -603,7 +602,7 @@ const world2Levels = [
         id: 222,
         name: 'Reverse Loop',
         difficulty: 9,
-        requiredStars: 129,
+        requiredStars: 131,
         balls: [{ x: 150, y: 375 }],
         goal: { x: 120, y: 260, width: 40, height: 40 },
         fans: [

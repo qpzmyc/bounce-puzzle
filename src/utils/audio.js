@@ -8,6 +8,7 @@ const SOUND_FILES = {
     super: require('../../assets/Sound effects/bounce_super.mp3'),
     level_complete: require('../../assets/Sound effects/level_complete.mp3'),
     death: require('../../assets/Sound effects/death.mp3'),
+    button_click: require('../../assets/Sound effects/button_click.mp3'),
 };
 
 // Background music tracks (Playlists for worlds)
@@ -75,6 +76,7 @@ const VOLUMES = {
     super: 1.1,   // Super bounce
     death: 0.8,   // Death sound
     level_complete: 1.2, // Victory sound
+    button_click: 0.6, // Button click sound
 };
 
 // VOLUME CONSTANTS
@@ -169,6 +171,7 @@ export const loadSounds = async () => {
         initializePool('sticky');
         initializePool('super');
         initializePool('death');
+        initializePool('button_click');
         levelCompletePlayer = createPlayer('level_complete');
 
         // Set volumes
@@ -228,6 +231,13 @@ export const playSound = (type) => {
             console.warn(`Sound ${type} failed`, error);
         }
     }
+};
+
+/**
+ * Plays button click sound. Use this for all button presses.
+ */
+export const playButtonClick = () => {
+    playSound('button_click');
 };
 
 // ==================== MUSIC SYSTEM ====================

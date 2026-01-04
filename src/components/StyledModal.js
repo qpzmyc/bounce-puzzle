@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { playButtonClick } from '../utils/audio';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BASE_WIDTH = 375;
@@ -27,6 +28,11 @@ const StyledModal = ({
     buttons = [],
     onClose
 }) => {
+    const handleButtonPress = (btn) => {
+        playButtonClick();
+        btn.onPress?.();
+    };
+
     return (
         <Modal
             visible={visible}
@@ -59,7 +65,7 @@ const StyledModal = ({
                                         isCancel ? styles.cancelButton : { backgroundColor: accentColor },
                                         buttons.length === 1 && styles.singleButton
                                     ]}
-                                    onPress={btn.onPress}
+                                    onPress={() => handleButtonPress(btn)}
                                 >
                                     <Text style={[
                                         styles.buttonText,
