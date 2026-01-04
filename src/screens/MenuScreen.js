@@ -351,10 +351,12 @@ const MenuScreen = ({ navigation }) => {
                             <Text style={styles.modalResetTxt}>Reset All Progress</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={[styles.settingRow, { borderBottomWidth: 0, marginTop: s(20) }]} onPress={handleUnlockAll}>
-                            <Text style={[styles.settingText, { color: COLORS.ui.accent }]}>Unlock All Levels (Dev)</Text>
-                            <Text style={styles.settingSubtext}>Complete everything</Text>
-                        </TouchableOpacity>
+                        {__DEV__ && (
+                            <TouchableOpacity style={[styles.settingRow, { borderBottomWidth: 0, marginTop: s(20) }]} onPress={handleUnlockAll}>
+                                <Text style={[styles.settingText, { color: COLORS.ui.accent }]}>Unlock All Levels (Dev)</Text>
+                                <Text style={styles.settingSubtext}>Complete everything</Text>
+                            </TouchableOpacity>
+                        )}
 
                         {/* Close */}
                         <TouchableOpacity style={styles.closeBtn} onPress={() => { playButtonClick(); setSettingsVisible(false); }}>

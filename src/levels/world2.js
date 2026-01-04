@@ -55,20 +55,39 @@ const world2Levels = [
     },
     {
         id: 203,
-        name: 'High Jump',
-        difficulty: 7,
-        balls: [{ x: 30, y: 450 }], // Start at bottom!
-        goal: { x: 200, y: 350, width: 40, height: 40 }, // Goal at top!
+        name: 'Spike Field',
+        difficulty: 4,
+        balls: [{ x: 40, y: 65 }],
+        goal: { x: 300, y: 470, width: 30, height: 30 },
         walls: [
-            { x: 180, y: 300, width: 10, height: 400 }, // Mid-air floor
-            { x: 220, y: 400, width: 80, height: 10 }, // Mid-air floor
-            { x: 260, y: 370, width: 10, height: 70 }, // Mid-air floor
+            { x: 55, y: 155, width: 100, height: 10 },
+            { x: 105, y: 235, width: 100, height: 10 },
+            { x: 230, y: 160, width: 100, height: 10 },
+            { x: 270, y: 240, width: 100, height: 10 },
+            { x: 60, y: 390, width: 100, height: 10 },
+            { x: 170, y: 320, width: 100, height: 10 },
+            { x: 275, y: 380, width: 100, height: 10 },
+            { x: 190, y: 450, width: 100, height: 10 },
+            { x: 155, y: 100, width: 100, height: 10 },
+            { x: 275, y: 50, width: 100, height: 10 },
         ],
-        platforms: { normal: 1, sticky: 0, super: 3 }, // Must use super platforms to climb
-        spikes: [],
+        platforms: { normal: 3, sticky: 1, super: 1 },
+        spikes: [
+            { x: 5, y: 135, width: 100, height: 10, direction: 'up' },
+            { x: 55, y: 215, width: 100, height: 10, direction: 'up' },
+            { x: 180, y: 140, width: 100, height: 10, direction: 'up' },
+            { x: 220, y: 220, width: 100, height: 10, direction: 'up' },
+            { x: 10, y: 370, width: 100, height: 10, direction: 'up' },
+            { x: 120, y: 300, width: 100, height: 10, direction: 'up' },
+            { x: 225, y: 360, width: 100, height: 10, direction: 'up' },
+            { x: 140, y: 430, width: 100, height: 10, direction: 'up' },
+            { x: 105, y: 80, width: 100, height: 10, direction: 'up' },
+            { x: 225, y: 30, width: 100, height: 10, direction: 'up' },
+        ],
         fans: [],
         noPlaceZones: []
     },
+
     {
         id: 204,
         name: 'Ricochet',
@@ -167,38 +186,26 @@ const world2Levels = [
     },
     {
         id: 207,
-        name: 'Spike Field',
-        difficulty: 4,
-        balls: [{ x: 40, y: 65 }],
-        goal: { x: 300, y: 470, width: 30, height: 30 },
+        name: 'Dunk',
+        difficulty: 5,
+        balls: [{ x: 295, y: 95 }],
+        goal: { x: 150, y: 465, width: 20, height: 20 },
         walls: [
-            { x: 55, y: 155, width: 100, height: 10 },
-            { x: 105, y: 235, width: 100, height: 10 },
-            { x: 230, y: 160, width: 100, height: 10 },
-            { x: 270, y: 240, width: 100, height: 10 },
-            { x: 60, y: 390, width: 100, height: 10 },
-            { x: 170, y: 320, width: 100, height: 10 },
-            { x: 275, y: 380, width: 100, height: 10 },
-            { x: 190, y: 450, width: 100, height: 10 },
-            { x: 155, y: 100, width: 100, height: 10 },
-            { x: 275, y: 50, width: 100, height: 10 },
+            { x: 175, y: 385, width: 10, height: 220 },
+            { x: 145, y: 385, width: 10, height: 220 },
+            { x: 160, y: 490, width: 30, height: 10 },
         ],
-        platforms: { normal: 3, sticky: 1, super: 1 },
-        spikes: [
-            { x: 5, y: 135, width: 100, height: 10, direction: 'up' },
-            { x: 55, y: 215, width: 100, height: 10, direction: 'up' },
-            { x: 180, y: 140, width: 100, height: 10, direction: 'up' },
-            { x: 220, y: 220, width: 100, height: 10, direction: 'up' },
-            { x: 10, y: 370, width: 100, height: 10, direction: 'up' },
-            { x: 120, y: 300, width: 100, height: 10, direction: 'up' },
-            { x: 225, y: 360, width: 100, height: 10, direction: 'up' },
-            { x: 140, y: 430, width: 100, height: 10, direction: 'up' },
-            { x: 105, y: 80, width: 100, height: 10, direction: 'up' },
-            { x: 225, y: 30, width: 100, height: 10, direction: 'up' },
+        platforms: { normal: 1, sticky: 1, super: 1 },
+        spikes: [],
+        fans: [
+            { x: 165, y: 25, width: 40, height: 40, direction: 'down' },
         ],
-        fans: [],
-        noPlaceZones: []
+        noPlaceZones: [
+            { x: 110, y: 255, width: 210, height: 510 },
+            { x: 280, y: 395, width: 130, height: 230 },
+        ]
     },
+
     {
         id: 208,
         name: 'Treasure Cave',
@@ -226,24 +233,19 @@ const world2Levels = [
     },
     {
         id: 209,
-        name: 'Dunk',
-        difficulty: 5,
-        balls: [{ x: 295, y: 95 }],
-        goal: { x: 150, y: 465, width: 20, height: 20 },
+        name: 'High Jump',
+        difficulty: 7,
+        balls: [{ x: 30, y: 450 }], // Start at bottom!
+        goal: { x: 200, y: 350, width: 40, height: 40 }, // Goal at top!
         walls: [
-            { x: 175, y: 385, width: 10, height: 220 },
-            { x: 145, y: 385, width: 10, height: 220 },
-            { x: 160, y: 490, width: 30, height: 10 },
+            { x: 180, y: 300, width: 10, height: 400 }, // Mid-air floor
+            { x: 220, y: 400, width: 80, height: 10 }, // Mid-air floor
+            { x: 260, y: 370, width: 10, height: 70 }, // Mid-air floor
         ],
-        platforms: { normal: 1, sticky: 1, super: 1 },
+        platforms: { normal: 1, sticky: 0, super: 3 }, // Must use super platforms to climb
         spikes: [],
-        fans: [
-            { x: 165, y: 25, width: 40, height: 40, direction: 'down' },
-        ],
-        noPlaceZones: [
-            { x: 110, y: 255, width: 210, height: 510 },
-            { x: 280, y: 395, width: 130, height: 230 },
-        ]
+        fans: [],
+        noPlaceZones: []
     },
     {
         id: 210,

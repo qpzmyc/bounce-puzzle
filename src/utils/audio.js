@@ -68,19 +68,21 @@ export const isAudioSystemInitialized = () => isLoaded;
 // VOLUME CONFIGURATION - Centralized for easy adjustment
 const VOLUMES = {
     // Music
-    music: 0.5, // Base volume for background music
+    music_menu: 0.12,
+    music_world1: 0.17,
+    music_world2: 0.1,
+    music_world3: 0.12,
 
     // Sound Effects
     normal: 11.0,  // Standard bounce
     sticky: 1.2,  // Sticky platform bounce
     super: 1.1,   // Super bounce
     death: 0.8,   // Death sound
-    level_complete: 1.2, // Victory sound
+    level_complete: 1.5, // Victory sound
     button_click: 0.6, // Button click sound
 };
 
 // VOLUME CONSTANTS
-const BASE_MUSIC_VOL = VOLUMES.music;
 const FADE_DURATION = 400; // ms (reduced from 1000 for snappier transitions)
 const FADE_STEPS = 10; // fewer steps for faster fade
 
@@ -292,7 +294,7 @@ const startFadeOut = (player) => {
 
 // Simplified Fade In - set volume immediately for guaranteed audibility
 // Simplified Fade In - set volume immediately for guaranteed audibility
-const startFadeIn = (player) => {
+const startFadeIn = (player, targetVolume) => {
     if (!player) return;
 
     try {
@@ -301,8 +303,8 @@ const startFadeIn = (player) => {
         let vol = 0;
 
         // Calculate step size
-        // We want to reach BASE_MUSIC_VOL in FADE_DURATION (400ms) with FADE_STEPS (10) steps
-        const step = BASE_MUSIC_VOL / FADE_STEPS;
+        // We want to reach targetVolume in FADE_DURATION (400ms) with FADE_STEPS (10) steps
+        const step = targetVolume / FADE_STEPS;
 
         // Start playback immediately at 0 volume
         setTimeout(() => {
@@ -314,8 +316,8 @@ const startFadeIn = (player) => {
 
                 fadeInInterval = setInterval(() => {
                     vol += step;
-                    if (vol >= BASE_MUSIC_VOL) {
-                        vol = BASE_MUSIC_VOL;
+                    if (vol >= targetVolume) {
+                        vol = targetVolume;
                         clearInterval(fadeInInterval);
                         fadeInInterval = null;
                     }
@@ -448,7 +450,9 @@ const playNextTrackInPlaylist = (isFirstTrack = false) => {
             }
 
             // Start playback first
-            startFadeIn(player);
+            const volKey = `music_${currentTrackKey}`;
+            const targetVol = VOLUMES[volKey] !== undefined ? VOLUMES[volKey] : 0.2;
+            startFadeIn(player, targetVol);
 
             // Then seek to random position AFTER playback starts (with delay)
             if (isFirstTrack && Array.isArray(resources)) {

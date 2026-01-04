@@ -1263,7 +1263,7 @@ const DraggablePlatform = ({ p, i, scale, gameLayout, onUpdate, onRemove, zones,
                 // 3. Physics Loop (LERP 0.25) - Body lags behind with heavier feel
                 const currentX = posRef.current.x;
                 const currentY = posRef.current.y;
-                const lerp = 0.5;
+                const lerp = 0.7;
 
                 let dx = snapTargetX - currentX;
                 let dy = snapTargetY - currentY;
