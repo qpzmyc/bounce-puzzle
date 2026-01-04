@@ -21,16 +21,22 @@ const MUSIC_FILES = {
         require('../../assets/Music/music_world1_1.mp3'),
         require('../../assets/Music/music_world1_2.mp3'),
         require('../../assets/Music/music_world1_3.mp3'),
+        require('../../assets/Music/music_world1_4.mp3'),
+        require('../../assets/Music/music_world1_5.mp3'),
     ],
     world2: [
         require('../../assets/Music/music_world2_1.mp3'),
         require('../../assets/Music/music_world2_2.mp3'),
         require('../../assets/Music/music_world2_3.mp3'),
+        require('../../assets/Music/music_world2_4.mp3'),
+        require('../../assets/Music/music_world2_5.mp3'),
     ],
     world3: [
         require('../../assets/Music/music_world3_1.mp3'),
         require('../../assets/Music/music_world3_2.mp3'),
         require('../../assets/Music/music_world3_3.mp3'),
+        require('../../assets/Music/music_world3_4.mp3'),
+        require('../../assets/Music/music_world3_5.mp3'),
     ],
 };
 
