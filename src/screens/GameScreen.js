@@ -21,7 +21,7 @@ import world3Levels from '../levels/world3';
 import { getLevelProgress, saveLevelProgress, getSettings, getBonusStars, saveBonusStars, hasEnteredWorld, markWorldEntered } from '../utils/storage';
 import { getTotalStars, getNextLevelOrRedirect } from '../utils/gameLogic';
 import * as Haptics from 'expo-haptics';
-import { loadSounds, playSound, unloadSounds, setSoundEnabled, playMusic, stopMusic } from '../utils/audio';
+import { loadSounds, playSound, unloadSounds, setSoundEnabled, playMusic, stopMusic, pauseMusic, resumeMusic } from '../utils/audio';
 import { recordLevelCompletion, shouldShowAd, showInterstitialAd, resolveAdTrigger, showRewardedAd } from '../utils/ads';
 import { BannerAd, BannerAdSize, TestIds } from '../utils/ads';
 import StyledModal from '../components/StyledModal';
@@ -497,8 +497,12 @@ const GameScreen = ({ route, navigation }) => {
         };
     }, [gameState, entities]);
 
+    const isPlayingRef = useRef(false); // Track if game is actually in progress (to ignore physics events in setup)
+    const levelFailedTimeoutRef = useRef(null); // Track timeout to clear it on retry
+
     const handleDrop = () => {
         if (gameState !== 'setup') return;
+        isPlayingRef.current = true; // Mark game as active
         setGameState('playing');
         const e = buildEntities(true);
         setEntities(e);
@@ -512,16 +516,25 @@ const GameScreen = ({ route, navigation }) => {
         }
         // If restarting from Win/Lose, lastTrail was already set in handleEvent('game-over')
 
+        // Clear any pending level failed timeout
+        if (levelFailedTimeoutRef.current) {
+            clearTimeout(levelFailedTimeoutRef.current);
+            levelFailedTimeoutRef.current = null;
+        }
+
         // Check for Time-Based Ad Trigger ONLY on retry
         // User request: "10 minute ad to play at the first restart/retry"
         const triggerReason = await shouldShowAd();
         if (triggerReason === 'TIME') {
+            pauseMusic();
             await showInterstitialAd();
+            resumeMusic();
             await resolveAdTrigger('TIME');
         }
 
         // Reset game state to setup
         setGameState('setup');
+        isPlayingRef.current = false; // Ignore further game over events
         // Kept selected platform index as per user request
         isGameOverRef.current = false;
         hasTriggeredDeathRef.current = false;
@@ -534,6 +547,7 @@ const GameScreen = ({ route, navigation }) => {
     const handleNext = async () => {
         setLastTrail([]);  // Clear trail when moving to next level
         setLiveTrail([]);
+        isPlayingRef.current = false;
 
         // Simple transition to next world (popup shown on load of new world)
         if (levelId === 123) {
@@ -580,7 +594,9 @@ const GameScreen = ({ route, navigation }) => {
         // Screen transition trigger:
         const triggerReason = await shouldShowAd();
         if (triggerReason) {
+            pauseMusic();
             await showInterstitialAd();
+            resumeMusic();
             await resolveAdTrigger(triggerReason);
         }
 
@@ -588,14 +604,28 @@ const GameScreen = ({ route, navigation }) => {
         navigation.navigate('Game', { levelId: nextLevel.id });
     };
 
-    const handleBack = () => {
+    const handleBack = async () => {
+        isPlayingRef.current = false; // Stop listening to game events
+
+        // Check if we should show an ad before exiting
+        const triggerReason = await shouldShowAd();
+        if (triggerReason) {
+            pauseMusic();
+            await showInterstitialAd();
+            resumeMusic();
+            await resolveAdTrigger(triggerReason);
+        }
+
         navigation.navigate('LevelSelect', { worldId: currentWorldId });
     };
 
     const handleEvent = (e) => {
         if (e.type === 'game-over') {
-            if (isGameOverRef.current) return; // Ignore if game over already triggered
+            // CRITICAL FIX: Ignore game-over events if we are not "playing" (e.g. in setup mode with 0 balls)
+            // or if game over was already handled.
+            if (!isPlayingRef.current || isGameOverRef.current) return;
             isGameOverRef.current = true;
+            isPlayingRef.current = false; // Stop further events (like concurrent wins/losses)
 
             // Save trail from this attempt before resetting
             if (entities?.trail?.points) {
@@ -613,8 +643,10 @@ const GameScreen = ({ route, navigation }) => {
 
             if (e.result === 'lose') {
                 // Delay showing "Try Again" screen by 0.6 seconds
-                setTimeout(() => {
+                // Store timeout to clear it if user retries immediately
+                levelFailedTimeoutRef.current = setTimeout(() => {
                     setGameState(e.result);
+                    levelFailedTimeoutRef.current = null;
                 }, 600);
             } else {
                 setGameState(e.result);
@@ -1014,7 +1046,7 @@ const GameScreen = ({ route, navigation }) => {
             <StyledModal
                 visible={worldWelcomeModal.visible}
                 title={`Welcome to World ${worldWelcomeModal.worldId}!`}
-                message="Bonus stars cannot be transported between worlds."
+                message="Bonus stars cannot be transported to new worlds."
                 icon="🌟"
                 accentColor="#8b5cf6"
                 buttons={[
