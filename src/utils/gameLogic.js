@@ -9,9 +9,15 @@ export const getNextLevelOrRedirect = (levels, progress) => {
     // Find the first level that is NOT completed
     const firstUncompleted = levels.find(l => !progress[l.id]?.completed);
 
-    // If we finished everything, maybe just stay on last or return null? 
-    // For now, default to the last level if all done, or first if none.
-    if (!firstUncompleted) return { levelId: levels[0].id, locked: false };
+    // If we finished everything, find the first level with < 3 stars
+    if (!firstUncompleted) {
+        const firstNotPerfect = levels.find(l => {
+            const p = progress[l.id];
+            return !p || (p.stars || 0) < 3;
+        });
+        if (firstNotPerfect) return { levelId: firstNotPerfect.id, locked: false };
+        return { levelId: levels[levels.length - 1].id, locked: false };
+    }
 
     // Check if this level is locked
     if (firstUncompleted.requiredStars && totalStars < firstUncompleted.requiredStars) {

@@ -55,99 +55,6 @@ const world2Levels = [
     },
     {
         id: 203,
-        name: 'Spike Field',
-        difficulty: 4,
-        balls: [{ x: 40, y: 65 }],
-        goal: { x: 300, y: 470, width: 30, height: 30 },
-        walls: [
-            { x: 55, y: 155, width: 100, height: 10 },
-            { x: 105, y: 235, width: 100, height: 10 },
-            { x: 230, y: 160, width: 100, height: 10 },
-            { x: 270, y: 240, width: 100, height: 10 },
-            { x: 60, y: 390, width: 100, height: 10 },
-            { x: 170, y: 320, width: 100, height: 10 },
-            { x: 275, y: 380, width: 100, height: 10 },
-            { x: 190, y: 450, width: 100, height: 10 },
-            { x: 155, y: 100, width: 100, height: 10 },
-            { x: 275, y: 50, width: 100, height: 10 },
-        ],
-        platforms: { normal: 3, sticky: 1, super: 1 },
-        spikes: [
-            { x: 5, y: 135, width: 100, height: 10, direction: 'up' },
-            { x: 55, y: 215, width: 100, height: 10, direction: 'up' },
-            { x: 180, y: 140, width: 100, height: 10, direction: 'up' },
-            { x: 220, y: 220, width: 100, height: 10, direction: 'up' },
-            { x: 10, y: 370, width: 100, height: 10, direction: 'up' },
-            { x: 120, y: 300, width: 100, height: 10, direction: 'up' },
-            { x: 225, y: 360, width: 100, height: 10, direction: 'up' },
-            { x: 140, y: 430, width: 100, height: 10, direction: 'up' },
-            { x: 105, y: 80, width: 100, height: 10, direction: 'up' },
-            { x: 225, y: 30, width: 100, height: 10, direction: 'up' },
-        ],
-        fans: [],
-        noPlaceZones: []
-    },
-
-    {
-        id: 204,
-        name: 'Ricochet',
-        difficulty: 6,
-        balls: [{ x: 40, y: 50 }],
-        goal: { x: 230, y: 320, width: 30, height: 30 },
-        walls: [
-            { x: 190, y: 260, width: 10, height: 120 }, // Right-side bumper
-            { x: 190, y: 375, width: 10, height: 50 }, // Right-side bumper
-            { x: 150, y: 300, width: 10, height: 200 }, // Left-side bumper
-            { x: 135, y: 90, width: 120, height: 10 }, // Top divider
-            { x: 230, y: 355, width: 80, height: 10 }, // Bottom divider
-            { x: 230, y: 315, width: 80, height: 10 }, // Bottom divider
-            { x: 265, y: 335, width: 10, height: 50 }, // Bottom divider
-            { x: 75, y: 395, width: 150, height: 10 }, // Bottom divider
-        ],
-        platforms: { normal: 0, sticky: 1, super: 3 }, // All super
-        spikes: [
-            { x: 80, y: 100, width: 110, height: 10, direction: 'down' },
-            { x: 145, y: 185, width: 10, height: 10, direction: 'up' },
-            { x: 5, y: 375, width: 140, height: 10, direction: 'up' },
-
-        ],
-        fans: [],
-        noPlaceZones: [
-            { x: 175, y: 310, width: 350, height: 140 },
-            { x: 175, y: 70, width: 350, height: 140 },
-        ]
-    },
-    {
-        id: 205,
-        name: "Launcher",
-        difficulty: 5,
-        balls: [
-            { x: 60, y: 20 },
-            { x: 290, y: 20 },
-            { x: 60, y: 120 },
-            { x: 290, y: 120 },
-            { x: 60, y: 210 },
-            { x: 290, y: 210 },
-            { x: 60, y: 290 },
-            { x: 290, y: 290 },
-            { x: 60, y: 360 },
-            { x: 290, y: 360 },
-            { x: 170, y: 20 },
-
-        ],
-        goal: { x: 155, y: 260, width: 30, height: 30 },
-        walls: [],
-        platforms: { normal: 0, sticky: 0, super: 4 },
-        spikes: [],
-        fans: [],
-        noPlaceZones: [
-            { x: 170, y: 270, width: 150, height: 300 },
-
-        ]
-    },
-
-    {
-        id: 206,
         name: 'Stairs',
         difficulty: 4,
         balls: [{ x: 45, y: 90 }],
@@ -185,72 +92,43 @@ const world2Levels = [
         noPlaceZones: []
     },
     {
-        id: 207,
-        name: 'Dunk',
-        difficulty: 5,
-        balls: [{ x: 295, y: 95 }],
-        goal: { x: 150, y: 465, width: 20, height: 20 },
+        id: 204,
+        name: 'Spike Field',
+        difficulty: 4,
+        balls: [{ x: 40, y: 65 }],
+        goal: { x: 300, y: 470, width: 30, height: 30 },
         walls: [
-            { x: 175, y: 385, width: 10, height: 220 },
-            { x: 145, y: 385, width: 10, height: 220 },
-            { x: 160, y: 490, width: 30, height: 10 },
-        ],
-        platforms: { normal: 1, sticky: 1, super: 1 },
-        spikes: [],
-        fans: [
-            { x: 165, y: 25, width: 40, height: 40, direction: 'down' },
-        ],
-        noPlaceZones: [
-            { x: 110, y: 255, width: 210, height: 510 },
-            { x: 280, y: 395, width: 130, height: 230 },
-        ]
-    },
-
-    {
-        id: 208,
-        name: 'Treasure Cave',
-        difficulty: 6,
-        balls: [{ x: 50, y: 60 }],
-        goal: { x: 120, y: 450, width: 40, height: 40 },
-        walls: [
-            { x: 195, y: 300, width: 195, height: 10 },
-            { x: 145, y: 430, width: 90, height: 10 },
-            { x: 230, y: 430, width: 10, height: 160 },
-            { x: 100, y: 400, width: 10, height: 210 },
+            { x: 55, y: 155, width: 100, height: 10 },
+            { x: 105, y: 235, width: 100, height: 10 },
+            { x: 230, y: 160, width: 100, height: 10 },
+            { x: 270, y: 240, width: 100, height: 10 },
+            { x: 60, y: 390, width: 100, height: 10 },
+            { x: 170, y: 320, width: 100, height: 10 },
+            { x: 275, y: 380, width: 100, height: 10 },
+            { x: 190, y: 450, width: 100, height: 10 },
+            { x: 155, y: 100, width: 100, height: 10 },
+            { x: 275, y: 50, width: 100, height: 10 },
         ],
         platforms: { normal: 3, sticky: 1, super: 1 },
         spikes: [
-            { x: 100, y: 280, width: 100, height: 10, direction: 'up' },
-            { x: 295, y: 295, width: 10, height: 10, direction: 'right' },
-            { x: 225, y: 310, width: 10, height: 10, direction: 'down' },
-            { x: 225, y: 335, width: 10, height: 10, direction: 'up' },
-            { x: 105, y: 410, width: 85, height: 10, direction: 'up' },
+            { x: 5, y: 135, width: 100, height: 10, direction: 'up' },
+            { x: 55, y: 215, width: 100, height: 10, direction: 'up' },
+            { x: 180, y: 140, width: 100, height: 10, direction: 'up' },
+            { x: 220, y: 220, width: 100, height: 10, direction: 'up' },
+            { x: 10, y: 370, width: 100, height: 10, direction: 'up' },
+            { x: 120, y: 300, width: 100, height: 10, direction: 'up' },
+            { x: 225, y: 360, width: 100, height: 10, direction: 'up' },
+            { x: 140, y: 430, width: 100, height: 10, direction: 'up' },
+            { x: 105, y: 80, width: 100, height: 10, direction: 'up' },
+            { x: 225, y: 30, width: 100, height: 10, direction: 'up' },
         ],
-        fans: [],
-        noPlaceZones: [
-            { x: 225, y: 150, width: 255, height: 285 },
-        ]
-    },
-    {
-        id: 209,
-        name: 'High Jump',
-        difficulty: 7,
-        balls: [{ x: 30, y: 450 }], // Start at bottom!
-        goal: { x: 200, y: 350, width: 40, height: 40 }, // Goal at top!
-        walls: [
-            { x: 180, y: 300, width: 10, height: 400 }, // Mid-air floor
-            { x: 220, y: 400, width: 80, height: 10 }, // Mid-air floor
-            { x: 260, y: 370, width: 10, height: 70 }, // Mid-air floor
-        ],
-        platforms: { normal: 1, sticky: 0, super: 3 }, // Must use super platforms to climb
-        spikes: [],
         fans: [],
         noPlaceZones: []
     },
     {
-        id: 210,
+        id: 205,
         name: 'Dangerous Highway',
-        difficulty: 6,
+        difficulty: 5,
         balls: [{ x: 30, y: 110 }],
         goal: { x: 300, y: 240, width: 30, height: 30 },
         walls: [
@@ -274,6 +152,127 @@ const world2Levels = [
 
         ]
     },
+    {
+        id: 206,
+        name: 'Ricochet',
+        difficulty: 6,
+        balls: [{ x: 40, y: 50 }],
+        goal: { x: 230, y: 320, width: 30, height: 30 },
+        walls: [
+            { x: 190, y: 260, width: 10, height: 120 }, // Right-side bumper
+            { x: 190, y: 375, width: 10, height: 50 }, // Right-side bumper
+            { x: 150, y: 300, width: 10, height: 200 }, // Left-side bumper
+            { x: 135, y: 90, width: 120, height: 10 }, // Top divider
+            { x: 230, y: 355, width: 80, height: 10 }, // Bottom divider
+            { x: 230, y: 315, width: 80, height: 10 }, // Bottom divider
+            { x: 265, y: 335, width: 10, height: 50 }, // Bottom divider
+            { x: 75, y: 395, width: 150, height: 10 }, // Bottom divider
+        ],
+        platforms: { normal: 0, sticky: 1, super: 3 }, // All super
+        spikes: [
+            { x: 80, y: 100, width: 110, height: 10, direction: 'down' },
+            { x: 145, y: 185, width: 10, height: 10, direction: 'up' },
+            { x: 5, y: 375, width: 140, height: 10, direction: 'up' },
+
+        ],
+        fans: [],
+        noPlaceZones: [
+            { x: 175, y: 310, width: 350, height: 140 },
+            { x: 175, y: 70, width: 350, height: 140 },
+        ]
+    },
+    {
+        id: 207,
+        name: "Launcher",
+        difficulty: 5,
+        balls: [
+            { x: 60, y: 20 },
+            { x: 290, y: 20 },
+            { x: 60, y: 120 },
+            { x: 290, y: 120 },
+            { x: 60, y: 210 },
+            { x: 290, y: 210 },
+            { x: 60, y: 290 },
+            { x: 290, y: 290 },
+            { x: 60, y: 360 },
+            { x: 290, y: 360 },
+            { x: 170, y: 20 },
+
+        ],
+        goal: { x: 155, y: 260, width: 30, height: 30 },
+        walls: [],
+        platforms: { normal: 0, sticky: 0, super: 4 },
+        spikes: [],
+        fans: [],
+        noPlaceZones: [
+            { x: 170, y: 270, width: 150, height: 300 },
+
+        ]
+    },
+    {
+        id: 208,
+        name: 'Dunk',
+        difficulty: 4,
+        balls: [{ x: 295, y: 95 }],
+        goal: { x: 150, y: 465, width: 20, height: 20 },
+        walls: [
+            { x: 175, y: 385, width: 10, height: 220 },
+            { x: 145, y: 385, width: 10, height: 220 },
+            { x: 160, y: 490, width: 30, height: 10 },
+        ],
+        platforms: { normal: 1, sticky: 1, super: 1 },
+        spikes: [],
+        fans: [
+            { x: 165, y: 25, width: 40, height: 40, direction: 'down' },
+        ],
+        noPlaceZones: [
+            { x: 110, y: 255, width: 210, height: 510 },
+            { x: 280, y: 395, width: 130, height: 230 },
+        ]
+    },
+    {
+        id: 209,
+        name: 'Spiky Hurdles',
+        difficulty: 6,
+        balls: [{ x: 240, y: 300 }],
+        goal: { x: 10, y: 350, width: 30, height: 30 },
+        walls: [
+            { x: 170, y: 340, width: 10, height: 340 }, // The Barrier
+            { x: 150, y: 170, width: 50, height: 10 }, // The Barrier
+            { x: 130, y: 340, width: 10, height: 340 }, // The Barrier
+            { x: 25, y: 390, width: 60, height: 10 },
+            { x: 50, y: 305, width: 10, height: 170 },
+        ],
+        platforms: { normal: 1, sticky: 0, super: 2 }, // Must jump over
+        spikes: [
+            { x: 125, y: 150, width: 50, height: 10, direction: 'up' },
+            { x: 45, y: 205, width: 10, height: 10, direction: 'up' },
+            { x: 60, y: 220, width: 10, height: 175, direction: 'right' },
+            { x: 180, y: 165, width: 10, height: 340, direction: 'right' },
+            { x: 110, y: 165, width: 10, height: 340, direction: 'left' },
+            { x: 5, y: 400, width: 50, height: 10, direction: 'down' },
+        ],
+        fans: [],
+        noPlaceZones: []
+    },
+
+    {
+        id: 210,
+        name: 'High Jump',
+        difficulty: 7,
+        balls: [{ x: 30, y: 450 }], // Start at bottom!
+        goal: { x: 200, y: 350, width: 40, height: 40 }, // Goal at top!
+        walls: [
+            { x: 180, y: 300, width: 10, height: 400 }, // Mid-air floor
+            { x: 220, y: 400, width: 80, height: 10 }, // Mid-air floor
+            { x: 260, y: 370, width: 10, height: 70 }, // Mid-air floor
+        ],
+        platforms: { normal: 1, sticky: 0, super: 3 }, // Must use super platforms to climb
+        spikes: [],
+        fans: [],
+        noPlaceZones: []
+    },
+
     {
         id: 211,
         name: 'Criss Cross',
@@ -302,7 +301,7 @@ const world2Levels = [
     {
         id: 212,
         name: 'Against the Wind',
-        difficulty: 5,
+        difficulty: 6,
         balls: [{ x: 250, y: 350 }],
         goal: { x: 290, y: 180, width: 40, height: 40 },
         walls: [
@@ -324,28 +323,28 @@ const world2Levels = [
     },
     {
         id: 213,
-        name: 'Spiky Hurdles',
-        difficulty: 6,
-        balls: [{ x: 240, y: 300 }],
-        goal: { x: 10, y: 350, width: 30, height: 30 },
+        name: 'Treasure Cave',
+        difficulty: 7,
+        balls: [{ x: 50, y: 60 }],
+        goal: { x: 120, y: 450, width: 40, height: 40 },
         walls: [
-            { x: 170, y: 340, width: 10, height: 340 }, // The Barrier
-            { x: 150, y: 170, width: 50, height: 10 }, // The Barrier
-            { x: 130, y: 340, width: 10, height: 340 }, // The Barrier
-            { x: 25, y: 390, width: 60, height: 10 },
-            { x: 50, y: 305, width: 10, height: 170 },
+            { x: 195, y: 300, width: 195, height: 10 },
+            { x: 145, y: 430, width: 90, height: 10 },
+            { x: 230, y: 430, width: 10, height: 160 },
+            { x: 100, y: 400, width: 10, height: 210 },
         ],
-        platforms: { normal: 1, sticky: 0, super: 2 }, // Must jump over
+        platforms: { normal: 3, sticky: 1, super: 1 },
         spikes: [
-            { x: 125, y: 150, width: 50, height: 10, direction: 'up' },
-            { x: 45, y: 205, width: 10, height: 10, direction: 'up' },
-            { x: 60, y: 220, width: 10, height: 175, direction: 'right' },
-            { x: 180, y: 165, width: 10, height: 340, direction: 'right' },
-            { x: 110, y: 165, width: 10, height: 340, direction: 'left' },
-            { x: 5, y: 400, width: 50, height: 10, direction: 'down' },
+            { x: 100, y: 280, width: 100, height: 10, direction: 'up' },
+            { x: 295, y: 295, width: 10, height: 10, direction: 'right' },
+            { x: 225, y: 310, width: 10, height: 10, direction: 'down' },
+            { x: 225, y: 335, width: 10, height: 10, direction: 'up' },
+            { x: 105, y: 410, width: 85, height: 10, direction: 'up' },
         ],
         fans: [],
-        noPlaceZones: []
+        noPlaceZones: [
+            { x: 225, y: 150, width: 255, height: 285 },
+        ]
     },
     {
         id: 214,
@@ -418,12 +417,35 @@ const world2Levels = [
         ],
         noPlaceZones: []
     },
-
-
     {
         id: 216,
+        name: 'Wrong Way',
+        difficulty: 8,
+        balls: [{ x: 95, y: 135 }],
+        goal: { x: 270, y: 165, width: 40, height: 40 },
+        walls: [
+            { x: 170, y: 60, width: 10, height: 120 },
+            { x: 170, y: 305, width: 10, height: 170 },
+            { x: 175, y: 0, width: 350, height: 10 },
+            { x: 290, y: 340, width: 90, height: 10 },
+        ],
+        platforms: { normal: 1, sticky: 0, super: 2 },
+        spikes: [
+            { x: 245, y: 350, width: 90, height: 10, direction: 'down' },
+        ],
+        fans: [
+            { x: 330, y: 145, width: 40, height: 40, direction: 'left' },
+            { x: 330, y: 185, width: 40, height: 40, direction: 'left' },
+            { x: 95, y: 465, width: 40, height: 40, direction: 'up' },
+            { x: 55, y: 465, width: 40, height: 40, direction: 'up' },
+            { x: 270, y: 465, width: 40, height: 40, direction: 'up' },
+        ],
+        noPlaceZones: []
+    },
+    {
+        id: 217,
         name: 'Tunnel',
-        difficulty: 6,
+        difficulty: 7,
         balls: [{ x: 30, y: 325 }],
         goal: { x: 260, y: 310, width: 30, height: 30 },
         walls: [
@@ -440,9 +462,9 @@ const world2Levels = [
         ]
     },
     {
-        id: 217,
+        id: 218,
         name: 'Precision II',
-        difficulty: 8,
+        difficulty: 9,
         balls: [{ x: 175, y: 20 }],
         goal: { x: 165, y: 490, width: 40, height: 20 },
         walls: [
@@ -467,11 +489,10 @@ const world2Levels = [
 
         ]
     },
-
     {
-        id: 218,
+        id: 219,
         name: 'Leap of Faith',
-        difficulty: 9,
+        difficulty: 10,
         balls: [{ x: 30, y: 85 }],
         goal: { x: 280, y: 265, width: 20, height: 20 },
         walls: [
@@ -511,33 +532,6 @@ const world2Levels = [
         fans: [],
         noPlaceZones: []
     },
-    {
-        id: 219,
-        name: 'Wrong Way',
-        difficulty: 8,
-        balls: [{ x: 95, y: 135 }],
-        goal: { x: 270, y: 165, width: 40, height: 40 },
-        walls: [
-            { x: 170, y: 60, width: 10, height: 120 },
-            { x: 170, y: 305, width: 10, height: 170 },
-            { x: 175, y: 0, width: 350, height: 10 },
-            { x: 290, y: 340, width: 90, height: 10 },
-        ],
-        platforms: { normal: 2, sticky: 0, super: 2 },
-        spikes: [
-            { x: 245, y: 350, width: 90, height: 10, direction: 'down' },
-        ],
-        fans: [
-            { x: 330, y: 145, width: 40, height: 40, direction: 'left' },
-            { x: 330, y: 185, width: 40, height: 40, direction: 'left' },
-            { x: 95, y: 465, width: 40, height: 40, direction: 'up' },
-            { x: 55, y: 465, width: 40, height: 40, direction: 'up' },
-            { x: 270, y: 465, width: 40, height: 40, direction: 'up' },
-        ],
-        noPlaceZones: []
-    },
-
-
     {
         id: 220,
         name: 'Treacherous Cavern',
@@ -626,7 +620,7 @@ const world2Levels = [
     {
         id: 223,
         name: 'Mirror Collision',
-        difficulty: 10,
+        difficulty: 11,
         requiredStars: 135,
         balls: [{ x: 265, y: 275 }, { x: 75, y: 275 }, { x: 80, y: 165 }, { x: 260, y: 165 }],
         goal: { x: 180, y: 400, width: 100, height: 40 },

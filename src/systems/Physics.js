@@ -115,9 +115,11 @@ const Physics = (entities, { time, dispatch }) => {
                 }
             });
 
-            // Limit trail length to prevent memory issues (keep last 500 points)
-            if (entities.trail.points.length > 500) {
-                entities.trail.points = entities.trail.points.slice(-500);
+            // Limit trail length to create a "fading tail" effect
+            // 50 points * 12px = ~600px of visible trail
+            const MAX_TRAIL_LENGTH = 230;
+            if (entities.trail.points.length > MAX_TRAIL_LENGTH) {
+                entities.trail.points = entities.trail.points.slice(-MAX_TRAIL_LENGTH);
             }
         }
 

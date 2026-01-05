@@ -486,9 +486,7 @@ const GameScreen = ({ route, navigation }) => {
                 // For now, I'll integrate the snippet's structure, assuming `level.id !== 123`
                 // is a placeholder or specific logic for a particular level.
                 // If the user intended to remove saveLevelProgress for level 123, this is correct.
-                if (level.id !== 123) { // Hardcoded exclusion for last level? Or just standard logic.
-                    saveLevelProgress(levelId, s);
-                }
+                saveLevelProgress(levelId, s);
                 playSound('level_complete');
             }
             Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
@@ -1115,7 +1113,9 @@ const GameScreen = ({ route, navigation }) => {
                         text: "Watch Ad", onPress: () => {
                             setLockedLevelModal({ ...lockedLevelModal, visible: false });
                             setTimeout(async () => {
+                                pauseMusic();
                                 const earned = await showRewardedAd();
+                                resumeMusic();
                                 if (earned) {
                                     const newBonus = bonusStars + 1;
                                     setBonusStars(newBonus);

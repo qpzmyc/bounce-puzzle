@@ -12,7 +12,7 @@ import { COLORS } from '../utils/constants';
 import world1Levels from '../levels';
 import world2Levels from '../levels/world2';
 import world3Levels from '../levels/world3';
-import { getLevelProgress } from '../utils/storage';
+import { getLevelProgress, getUnlockedLevels, saveUnlockedLevel } from '../utils/storage';
 import { getNextLevelOrRedirect, getTotalStars } from '../utils/gameLogic';
 import { Alert } from 'react-native';
 import { playMusic, pauseMusic, resumeMusic, playButtonClick } from '../utils/audio';
@@ -34,14 +34,31 @@ const LevelSelectScreen = ({ route, navigation }) => {
     const levels = world.levels;
 
     const [progress, setProgress] = useState({});
+    const [unlockedLevels, setUnlockedLevels] = useState({});
     const [bonusStars, setBonusStars] = useState(0);
     const [lockedModal, setLockedModal] = useState({ visible: false, required: 0, current: 0 });
     const [rewardModal, setRewardModal] = useState({ visible: false, title: '', message: '' });
 
     useFocusEffect(
         useCallback(() => {
-            getLevelProgress().then(setProgress);
-            getBonusStars().then(setBonusStars);
+            Promise.all([
+                getLevelProgress(),
+                getUnlockedLevels(),
+                getBonusStars()
+            ]).then(([prog, unlocked, bonus]) => {
+                setProgress(prog);
+                setUnlockedLevels(unlocked);
+                setBonusStars(bonus);
+
+                // Auto-save unlocked levels if criteria met (legacy sync)
+                const total = getTotalStars(prog, bonus);
+                levels.forEach(l => {
+                    const isUnlocked = unlocked[l.id];
+                    if (!isUnlocked && (!l.requiredStars || total >= l.requiredStars)) {
+                        saveUnlockedLevel(l.id);
+                    }
+                });
+            });
             playMusic('menu');
         }, [])
     );
@@ -50,8 +67,9 @@ const LevelSelectScreen = ({ route, navigation }) => {
         playButtonClick();
         const level = levels.find(l => l.id === levelId);
         const totalStars = getTotalStars(progress, bonusStars);
+        const isUnlocked = unlockedLevels[levelId] || (!level.requiredStars || totalStars >= level.requiredStars);
 
-        if (level.requiredStars && totalStars < level.requiredStars) {
+        if (!isUnlocked) {
             setLockedModal({ visible: true, required: level.requiredStars, current: totalStars });
             return;
         }
@@ -97,6 +115,20 @@ const LevelSelectScreen = ({ route, navigation }) => {
 
         if (isNext) return 'next';
         if (isCompleted) return 'completed';
+        if (isNext) return 'next';
+        if (isCompleted) return 'completed';
+
+        // Check persistent unlock
+        const level = levels.find(l => l.id === levelId);
+        const totalStars = getTotalStars(progress, bonusStars);
+        const isUnlocked = unlockedLevels[levelId] || (!level.requiredStars || totalStars >= level.requiredStars);
+
+        if (isUnlocked) return 'locked'; // Visual style is 'locked' (grey) but it's clickable given handleLevelSelect logic? 
+        // Actually, if it's unlocked but not completed and not next, it's just a future level?
+        // Wait, "locked" status in getLevelStatus controls COLOR.
+        // If it is strictly UNLOCKED, we should probably show it as playable (maybe different color?)
+        // The original code used 'locked' for anything not next/completed.
+        // Let's keep it consistent: 'locked' style means "grey/default".
         return 'locked';
     };
 

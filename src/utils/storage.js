@@ -79,6 +79,8 @@ export const clearProgress = async () => {
         await AsyncStorage.removeItem(WORLD_ENTERED_KEY);
         // also clear bonus stars if "clearing all progress" implies it
         await AsyncStorage.removeItem(BONUS_STARS_KEY);
+        await AsyncStorage.removeItem(UNLOCKED_LEVELS_KEY);
+        await AsyncStorage.removeItem(UNLOCKED_WORLDS_KEY);
     } catch (e) {
         console.error("Failed to clear progress", e);
     }
@@ -180,3 +182,46 @@ export const markWorldEntered = async (worldId) => {
         console.error("Failed to mark world entry", e);
     }
 };
+
+// Persistent Unlock Keys
+const UNLOCKED_LEVELS_KEY = '@bounce_puzzle_unlocked_levels';
+const UNLOCKED_WORLDS_KEY = '@bounce_puzzle_unlocked_worlds';
+
+export const getUnlockedLevels = async () => {
+    try {
+        const jsonValue = await AsyncStorage.getItem(UNLOCKED_LEVELS_KEY);
+        return jsonValue != null ? JSON.parse(jsonValue) : {};
+    } catch (e) {
+        return {};
+    }
+};
+
+export const saveUnlockedLevel = async (levelId) => {
+    try {
+        const current = await getUnlockedLevels();
+        if (!current[levelId]) {
+            current[levelId] = true;
+            await AsyncStorage.setItem(UNLOCKED_LEVELS_KEY, JSON.stringify(current));
+        }
+    } catch (e) { }
+};
+
+export const getUnlockedWorlds = async () => {
+    try {
+        const jsonValue = await AsyncStorage.getItem(UNLOCKED_WORLDS_KEY);
+        return jsonValue != null ? JSON.parse(jsonValue) : {};
+    } catch (e) {
+        return {};
+    }
+};
+
+export const saveUnlockedWorld = async (worldId) => {
+    try {
+        const current = await getUnlockedWorlds();
+        if (!current[worldId]) {
+            current[worldId] = true;
+            await AsyncStorage.setItem(UNLOCKED_WORLDS_KEY, JSON.stringify(current));
+        }
+    } catch (e) { }
+};
+

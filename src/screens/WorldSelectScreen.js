@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import StyledModal from '../components/StyledModal';
 import { useFocusEffect } from '@react-navigation/native';
-import { getLevelProgress } from '../utils/storage';
+import { getLevelProgress, getUnlockedWorlds, saveUnlockedWorld } from '../utils/storage';
 import { playMusic, playButtonClick } from '../utils/audio';
 import world1Levels from '../levels';
 import world2Levels from '../levels/world2';
@@ -47,17 +47,40 @@ const WORLDS = [
 
 const WorldSelectScreen = ({ navigation }) => {
     const [progress, setProgress] = React.useState({});
+    const [unlockedWorlds, setUnlockedWorlds] = React.useState({});
     const [lockedModal, setLockedModal] = React.useState({ visible: false });
 
     useFocusEffect(
         React.useCallback(() => {
-            getLevelProgress().then(setProgress);
+            Promise.all([
+                getLevelProgress(),
+                getUnlockedWorlds()
+            ]).then(([prog, unlocked]) => {
+                setProgress(prog);
+                setUnlockedWorlds(unlocked);
+
+                // Auto-save unlocked worlds logic (legacy)
+                // W2 unlocked if W1 complete
+                const lastLevelW1 = world1Levels[world1Levels.length - 1];
+                if (prog[lastLevelW1.id]?.completed && !unlocked[2]) {
+                    saveUnlockedWorld(2);
+                }
+                // W3 unlocked if W2 complete
+                const lastLevelW2 = world2Levels[world2Levels.length - 1];
+                if (prog[lastLevelW2.id]?.completed && !unlocked[3]) {
+                    saveUnlockedWorld(3);
+                }
+            });
             playMusic('menu');
         }, [])
     );
 
     const isWorldUnlocked = (worldId) => {
         if (worldId === 1) return true;
+
+        // Check persistent unlock first
+        if (unlockedWorlds[worldId]) return true;
+
         if (worldId === 2) {
             // W2 unlocked if last level of W1 is completed
             const lastLevelW1 = world1Levels[world1Levels.length - 1];

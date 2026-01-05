@@ -77,7 +77,7 @@ const levels = [
     {
         id: 105,
         name: "Physics Lab",
-        difficulty: 3,
+        difficulty: 2,
         balls: [{ x: 50, y: 150 }, { x: 200, y: 50 }],  // Left ball starts lower to require super pad
         goal: { x: 270, y: 200, width: 40, height: 40 }, // Lowered goal
         walls: [
@@ -237,7 +237,7 @@ const levels = [
     {
         id: 112,
         name: "Ascension",
-        difficulty: 5,
+        difficulty: 4,
         balls: [{ x: 50, y: 450 }],
         goal: { x: 120, y: 200, width: 40, height: 40 },
         walls: [
@@ -333,7 +333,7 @@ const levels = [
     {
         id: 116,
         name: "Strong Current",
-        difficulty: 5,
+        difficulty: 6,
         balls: [{ x: 50, y: 80 }],
         goal: { x: 150, y: 450, width: 40, height: 40 },
         walls: [],
@@ -511,7 +511,7 @@ const levels = [
     {
         id: 122,
         name: "Ride the Wind",
-        difficulty: 7,
+        difficulty: 6,
         requiredStars: 62,
         balls: [{ x: 50, y: 350 }],
         goal: { x: 300, y: 50, width: 30, height: 30 },
