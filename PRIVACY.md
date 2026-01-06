@@ -2,7 +2,7 @@
 
 **Effective Date: January 6, 2026**
 
-Bin Wu ("we," "our," or "us") built the Bounce Puzzle app as a Free app. This SERVICE is provided by Bin Wu at no cost and is intended for use as is.
+Yuecheng Wu built the Bounce Puzzle app as a Free app. This SERVICE is provided by Yuecheng Wu at no cost and is intended for use as is.
 
 If you choose to use our Service, then you agree to the collection and use of information in relation to this policy. The Personal Information that we collect is used for providing and improving the Service. We will not use or share your information with anyone except as described in this Privacy Policy.
 
