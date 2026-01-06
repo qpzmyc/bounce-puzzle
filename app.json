@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.qpzmyc.bouncepuzzle",
+      "bundleIdentifier": "com.bwu.bouncepuzzle",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -37,7 +37,8 @@
           "iosAppId": "ca-app-pub-9298010065130394~6679897257"
         }
       ],
-      "expo-audio"
+      "expo-audio",
+      "expo-asset"
     ],
     "extra": {
       "eas": {
