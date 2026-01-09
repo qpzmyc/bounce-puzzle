@@ -420,7 +420,7 @@ const world2Levels = [
     {
         id: 216,
         name: 'Wrong Way',
-        difficulty: 8,
+        difficulty: 7,
         balls: [{ x: 95, y: 135 }],
         goal: { x: 270, y: 165, width: 40, height: 40 },
         walls: [

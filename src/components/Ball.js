@@ -1,12 +1,17 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { COLORS, PHYSICS } from '../utils/constants';
+import { useBallSkin } from '../utils/BallSkinContext';
 
-const Ball = ({ body }) => {
+const Ball = ({ body, color: colorProp }) => {
     if (!body) return null;
 
+    const { color: contextColor } = useBallSkin();
     const { position } = body;
     const radius = PHYSICS.ballRadius;
+
+    // Use prop color if provided, otherwise use context color
+    const ballColor = colorProp || contextColor || COLORS.ball;
 
     return (
         <View
@@ -18,6 +23,8 @@ const Ball = ({ body }) => {
                     width: radius * 2,
                     height: radius * 2,
                     borderRadius: radius,
+                    backgroundColor: ballColor,
+                    shadowColor: ballColor,
                 },
             ]}
         >
@@ -29,8 +36,6 @@ const Ball = ({ body }) => {
 const styles = StyleSheet.create({
     ball: {
         position: 'absolute',
-        backgroundColor: COLORS.ball,
-        shadowColor: COLORS.ball,
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.8,
         shadowRadius: 10,

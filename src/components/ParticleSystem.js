@@ -50,7 +50,7 @@ const ParticleSystem = forwardRef((props, ref) => {
     }, [particles.length > 0]); // Only run if particles exist
 
     return (
-        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        <View style={[StyleSheet.absoluteFill, { zIndex: 20 }]} pointerEvents="none">
             {particles.map(p => (
                 <View
                     key={p.id}

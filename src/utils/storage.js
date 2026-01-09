@@ -80,7 +80,15 @@ export const clearProgress = async () => {
         // also clear bonus stars if "clearing all progress" implies it
         await AsyncStorage.removeItem(BONUS_STARS_KEY);
         await AsyncStorage.removeItem(UNLOCKED_LEVELS_KEY);
+        await AsyncStorage.removeItem(UNLOCKED_LEVELS_KEY);
         await AsyncStorage.removeItem(UNLOCKED_WORLDS_KEY);
+        await AsyncStorage.removeItem(DEATH_COUNT_KEY);
+        // Correctly clear bounce count and other persistent data
+        await AsyncStorage.removeItem(BOUNCE_COUNT_KEY);
+        await AsyncStorage.removeItem(BOUNCE_COUNT_KEY);
+        await AsyncStorage.removeItem(TRAIL_SKIN_KEY);
+        await AsyncStorage.removeItem(BALL_SKIN_KEY);
+        await AsyncStorage.removeItem(BONUS_AD_KEY);
     } catch (e) {
         console.error("Failed to clear progress", e);
     }
@@ -158,6 +166,79 @@ export const saveAdState = async (state) => {
     }
 };
 
+// Bounce Count (for Achievements)
+const BOUNCE_COUNT_KEY = '@bounce_puzzle_bounce_count';
+
+export const getBounceCount = async () => {
+    try {
+        const value = await AsyncStorage.getItem(BOUNCE_COUNT_KEY);
+        return value != null ? parseInt(value) : 0;
+    } catch (e) {
+        console.error("Failed to load bounce count", e);
+        return 0;
+    }
+};
+
+export const addBounceCount = async (amount) => {
+    try {
+        const current = await getBounceCount();
+        const newCount = current + amount;
+        await AsyncStorage.setItem(BOUNCE_COUNT_KEY, newCount.toString());
+        return newCount;
+    } catch (e) {
+        console.error("Failed to save bounce count", e);
+        return 0;
+    }
+};
+
+// Death Count (for Achievements)
+const DEATH_COUNT_KEY = '@bounce_puzzle_death_count';
+
+export const getDeathCount = async () => {
+    try {
+        const value = await AsyncStorage.getItem(DEATH_COUNT_KEY);
+        return value != null ? parseInt(value) : 0;
+    } catch (e) {
+        console.error("Failed to load death count", e);
+        return 0;
+    }
+};
+
+export const addDeathCount = async (amount = 1) => {
+    try {
+        const current = await getDeathCount();
+        const newCount = current + amount;
+        await AsyncStorage.setItem(DEATH_COUNT_KEY, newCount.toString());
+        return newCount;
+    } catch (e) {
+        console.error("Failed to save death count", e);
+        return 0;
+    }
+};
+
+// Bonus Ad Count (for Achievements)
+const BONUS_AD_KEY = '@bounce_puzzle_bonus_ad_count';
+
+export const getBonusAdCount = async () => {
+    try {
+        const value = await AsyncStorage.getItem(BONUS_AD_KEY);
+        return value != null ? parseInt(value) : 0;
+    } catch (e) {
+        return 0;
+    }
+};
+
+export const addBonusAdCount = async (amount = 1) => {
+    try {
+        const current = await getBonusAdCount();
+        const newCount = current + amount;
+        await AsyncStorage.setItem(BONUS_AD_KEY, newCount.toString());
+        return newCount;
+    } catch (e) {
+        return 0;
+    }
+};
+
 // World Entry Tracking (for first-time welcome popups)
 const WORLD_ENTERED_KEY = '@bounce_puzzle_world_entered';
 
@@ -225,3 +306,41 @@ export const saveUnlockedWorld = async (worldId) => {
     } catch (e) { }
 };
 
+// Ball Skin Storage
+const BALL_SKIN_KEY = '@bounce_puzzle_ball_skin';
+
+export const getSelectedBallSkin = async () => {
+    try {
+        const value = await AsyncStorage.getItem(BALL_SKIN_KEY);
+        return value != null ? value : 'red'; // Default to 'red'
+    } catch (e) {
+        console.error("Failed to load ball skin", e);
+        return 'red';
+    }
+};
+
+export const saveSelectedBallSkin = async (skinId) => {
+    try {
+        await AsyncStorage.setItem(BALL_SKIN_KEY, skinId);
+    } catch (e) {
+        console.error("Failed to save ball skin", e);
+    }
+};
+
+// Trail Skin Storage
+const TRAIL_SKIN_KEY = '@bounce_puzzle_trail_skin';
+
+export const getSelectedTrailSkin = async () => {
+    try {
+        const value = await AsyncStorage.getItem(TRAIL_SKIN_KEY);
+        return value != null ? value : 'red'; // Default to 'red'
+    } catch (e) {
+        return 'red';
+    }
+};
+
+export const saveSelectedTrailSkin = async (skinId) => {
+    try {
+        await AsyncStorage.setItem(TRAIL_SKIN_KEY, skinId);
+    } catch (e) { }
+};

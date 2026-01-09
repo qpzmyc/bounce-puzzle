@@ -17,6 +17,7 @@ import { useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 import { loadSounds, unloadSounds } from './src/utils/audio';
 import { onAppBackground, onAppForeground } from './src/utils/ads';
+import { BallSkinProvider } from './src/utils/BallSkinContext';
 
 export default function App() {
   const appState = useRef(AppState.currentState);
@@ -44,22 +45,25 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <NavigationContainer>
-          <StatusBar style="light" />
-          <Stack.Navigator
-            initialRouteName="Menu"
-            screenOptions={{
-              headerShown: false,
-            }}
-          >
-            <Stack.Screen name="Menu" component={MenuScreen} />
-            <Stack.Screen name="WorldSelect" component={WorldSelectScreen} />
-            <Stack.Screen name="LevelSelect" component={LevelSelectScreen} />
-            <Stack.Screen name="Game" component={GameScreen} />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </GestureHandlerRootView>
+      <BallSkinProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <NavigationContainer>
+            <StatusBar style="light" />
+            <Stack.Navigator
+              initialRouteName="Menu"
+              screenOptions={{
+                headerShown: false,
+              }}
+            >
+              <Stack.Screen name="Menu" component={MenuScreen} />
+              <Stack.Screen name="WorldSelect" component={WorldSelectScreen} />
+              <Stack.Screen name="LevelSelect" component={LevelSelectScreen} />
+              <Stack.Screen name="Game" component={GameScreen} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </GestureHandlerRootView>
+      </BallSkinProvider>
     </SafeAreaProvider>
   );
 }
+

@@ -171,9 +171,7 @@ const levels = [
             { x: 0, y: 275, width: 155, height: 10, direction: 'up' },    // Left side spikes (up to gap)
             { x: 185, y: 275, width: 155, height: 10, direction: 'up' },  // Right side spikes (after gap)
         ],
-        noPlaceZones: [
-            { x: 260, y: 137.5, width: 150, height: 275 }, // Gap
-        ],
+        noPlaceZones: [],
     },
 
     // 10. BOSS: Upside Down

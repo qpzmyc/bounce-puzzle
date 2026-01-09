@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { COLORS } from '../utils/constants';
-
-// Renders the ball trail as a solid line of dots
+import { useBallSkin } from '../utils/BallSkinContext';
 const BallTrail = ({ points }) => {
+    const { trailColor } = useBallSkin();
+
     if (!points || points.length === 0) return null;
 
     return (
@@ -12,7 +13,7 @@ const BallTrail = ({ points }) => {
                 // Higher base opacity for more solid appearance
                 // Recent points are fully opaque, older ones slightly faded
                 const ageRatio = index / points.length;
-                const opacity = 0.4 + ageRatio * 0.5;  // 0.4 to 0.9
+                const opacity = 0.3 + ageRatio * 0.6;  // 0.4 to 0.9
                 // Consistent size for solid trail
                 const size = 6;
 
@@ -28,7 +29,7 @@ const BallTrail = ({ points }) => {
                                 height: size,
                                 borderRadius: size / 2,
                                 opacity,
-                                backgroundColor: point.color || COLORS.ball,
+                                backgroundColor: trailColor || COLORS.ball,
                             },
                         ]}
                     />

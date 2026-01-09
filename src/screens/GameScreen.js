@@ -19,6 +19,7 @@ import levels from '../levels';
 import world2Levels from '../levels/world2';
 import world3Levels from '../levels/world3';
 import { getLevelProgress, saveLevelProgress, getSettings, getBonusStars, saveBonusStars, hasEnteredWorld, markWorldEntered } from '../utils/storage';
+import { incrementBounceCount, incrementDeathCount, checkCompletion } from '../utils/achievements';
 import { getTotalStars, getNextLevelOrRedirect } from '../utils/gameLogic';
 import * as Haptics from 'expo-haptics';
 import { loadSounds, playSound, unloadSounds, setSoundEnabled, playMusic, stopMusic, pauseMusic, resumeMusic, playButtonClick } from '../utils/audio';
@@ -206,6 +207,14 @@ const GameScreen = ({ route, navigation }) => {
 
     const gameAreaRef = useRef(null);  // Ref to track game area position
     const dragPosRef = useRef({ x: 0, y: 0 }); // Track internal position for damping LERP
+    const bouncesThisAttemptRef = useRef(0); // Cap bounces per attempt
+
+    const countBounce = () => {
+        if (bouncesThisAttemptRef.current < 30) {
+            incrementBounceCount(1);
+            bouncesThisAttemptRef.current += 1;
+        }
+    };
 
     // Calculate available platforms
     const getTotalPlatforms = () => Object.values(level.platforms).reduce((a, b) => a + b, 0);
@@ -237,7 +246,7 @@ const GameScreen = ({ route, navigation }) => {
             const wallH = GAME.height * 2;
 
             // Left (Move inward to ensure no clipping) -> Edge at x=5
-            const leftWallBody = Matter.Bodies.rectangle(-20, GAME.height / 2, wallThick, wallH, { isStatic: true, restitution: 1.0, friction: 0 });
+            const leftWallBody = Matter.Bodies.rectangle(-20, GAME.height / 2, wallThick, wallH, { isStatic: true, restitution: 1.0, friction: 0, label: 'wall' });
             Matter.World.add(engine.world, leftWallBody);
             ents['wall-left-invis'] = {
                 body: leftWallBody,
@@ -247,7 +256,7 @@ const GameScreen = ({ route, navigation }) => {
             };
 
             // Right (Move inward) -> Edge at width-5
-            const rightWallBody = Matter.Bodies.rectangle(GAME.width + 20, GAME.height / 2, wallThick, wallH, { isStatic: true, restitution: 1.0, friction: 0 });
+            const rightWallBody = Matter.Bodies.rectangle(GAME.width + 20, GAME.height / 2, wallThick, wallH, { isStatic: true, restitution: 1.0, friction: 0, label: 'wall' });
             Matter.World.add(engine.world, rightWallBody);
             ents['wall-right-invis'] = {
                 body: rightWallBody,
@@ -257,7 +266,7 @@ const GameScreen = ({ route, navigation }) => {
             };
 
             level.walls.forEach((w, i) => {
-                const b = Matter.Bodies.rectangle(w.x, w.y, w.width, w.height, { isStatic: true, restitution: 0.3 });
+                const b = Matter.Bodies.rectangle(w.x, w.y, w.width, w.height, { isStatic: true, restitution: 0.3, label: 'wall' });
                 Matter.World.add(engine.world, b);
                 ents[`wall${i}`] = { body: b, size: { width: w.width, height: w.height }, renderer: Wall, color: THEME.wall };
             });
@@ -355,6 +364,7 @@ const GameScreen = ({ route, navigation }) => {
                                         stickyBounced.add(key);
                                         if (settings.haptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                                         playSound('sticky');
+                                        countBounce();
                                     }
                                 } else if (type === 'super') {
                                     // DIRECTIONAL SUPER JUMP
@@ -383,6 +393,7 @@ const GameScreen = ({ route, navigation }) => {
                                         });
                                         if (settings.haptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                                         playSound('super');
+                                        countBounce();
                                     }
                                 } else if (type === 'normal') {
                                     // Standard Bounce
@@ -390,9 +401,11 @@ const GameScreen = ({ route, navigation }) => {
                                     if (ball.velocity.y > 2.0) {
                                         if (settings.haptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                                         playSound('normal');
+                                        countBounce(); // Track bounce for achievements
                                     }
                                 }
                             }
+
                         }
                     });
                 });
@@ -406,7 +419,7 @@ const GameScreen = ({ route, navigation }) => {
 
     };
 
-    useEffect(() => { setPlacedPlatforms([]); setGameState('setup'); setStars(0); setLastTrail([]); setLiveTrail([]); setSelectedPlatformIndex(null); isGameOverRef.current = false; hasTriggeredDeathRef.current = false; hasScoredThisSession.current = false; }, [levelId]);
+    useEffect(() => { setPlacedPlatforms([]); setGameState('setup'); setStars(0); setLastTrail([]); setLiveTrail([]); setSelectedPlatformIndex(null); isGameOverRef.current = false; hasTriggeredDeathRef.current = false; hasScoredThisSession.current = false; bouncesThisAttemptRef.current = 0; }, [levelId]);
 
     // Theme logic moved up
     // console.log(`[GameScreen] Level: ${levelId}...`);
@@ -486,7 +499,11 @@ const GameScreen = ({ route, navigation }) => {
                 // For now, I'll integrate the snippet's structure, assuming `level.id !== 123`
                 // is a placeholder or specific logic for a particular level.
                 // If the user intended to remove saveLevelProgress for level 123, this is correct.
-                saveLevelProgress(levelId, s);
+                saveLevelProgress(levelId, s).then(() => {
+                    // Check for world completion achievements
+                    if (currentWorldId === 1) checkCompletion(1, levels);
+                    else if (currentWorldId === 2) checkCompletion(2, world2Levels);
+                });
                 playSound('level_complete');
             }
             Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
@@ -513,6 +530,7 @@ const GameScreen = ({ route, navigation }) => {
         playButtonClick();
         if (gameState !== 'setup') return;
         isPlayingRef.current = true; // Mark game as active
+        bouncesThisAttemptRef.current = 0; // Reset bounce count for new attempt
         setGameState('playing');
         const e = buildEntities(true);
         setEntities(e);
@@ -533,8 +551,17 @@ const GameScreen = ({ route, navigation }) => {
             levelFailedTimeoutRef.current = null;
         }
 
-        // Check for Time-Based Ad Trigger ONLY on retry
-        // User request: "10 minute ad to play at the first restart/retry"
+        // 1. Reset Game State FIRST (Stop Audio/Physics)
+        setGameState('setup');
+        isPlayingRef.current = false; // Ignore further game over events
+        isGameOverRef.current = false;
+        hasTriggeredDeathRef.current = false;
+        bouncesThisAttemptRef.current = 0;
+        const e = buildEntities(false);
+        setEntities(e);
+        gameEngineRef.current?.swap(e);
+
+        // 2. Check for Time-Based Ad Trigger
         const triggerReason = await shouldShowAd();
         if (triggerReason === 'TIME') {
             pauseMusic();
@@ -542,16 +569,6 @@ const GameScreen = ({ route, navigation }) => {
             resumeMusic();
             await resolveAdTrigger('TIME');
         }
-
-        // Reset game state to setup
-        setGameState('setup');
-        isPlayingRef.current = false; // Ignore further game over events
-        // Kept selected platform index as per user request
-        isGameOverRef.current = false;
-        hasTriggeredDeathRef.current = false;
-        const e = buildEntities(false);
-        setEntities(e);
-        gameEngineRef.current?.swap(e);
     };
 
 
@@ -658,8 +675,13 @@ const GameScreen = ({ route, navigation }) => {
                 // Delay showing "Try Again" screen by 0.6 seconds
                 // Store timeout to clear it if user retries immediately
                 levelFailedTimeoutRef.current = setTimeout(() => {
+                    // Fix: Update trail one last time to include the movement during this delay
+                    if (entities?.trail?.points) {
+                        setLastTrail([...entities.trail.points]);
+                    }
                     setGameState(e.result);
                     levelFailedTimeoutRef.current = null;
+                    incrementDeathCount(1);
                 }, 600);
             } else {
                 setGameState(e.result);
@@ -984,10 +1006,10 @@ const GameScreen = ({ route, navigation }) => {
                         }}
                         onPress={() => { if (gameState === 'setup') clearSelection(); }}
                     >
-                        {entities && <GameEngine ref={gameEngineRef} style={{ width: GAME.width, height: GAME.height }} systems={[Physics]} entities={entities} running={gameState === 'playing' && isFocused} onEvent={handleEvent} />}
-
                         {gameState === 'setup' && lastTrail.length > 0 && <BallTrail points={lastTrail} />}
                         {gameState === 'playing' && liveTrail.length > 0 && <BallTrail points={liveTrail} />}
+
+                        {entities && <GameEngine ref={gameEngineRef} style={{ width: GAME.width, height: GAME.height, zIndex: 6 }} systems={[Physics]} entities={entities} running={gameState === 'playing' && isFocused} onEvent={handleEvent} />}
 
                         {gameState === 'setup' && (level.balls || []).map((b, i) => <StartArea key={i} position={b} />)}
                         {gameState === 'setup' && placedPlatforms.map((p, i) => (

@@ -12,8 +12,10 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from '@react-navigation/native';
-import { COLORS } from '../utils/constants';
-import { getLevelProgress, clearProgress, getSettings, saveSettings, unlockAllLevels, getBonusStars, saveBonusStars } from '../utils/storage'; // Added bonus stars functions
+import { initGameCenter, incrementAdCount } from '../utils/achievements';
+import { COLORS, BALL_SKINS, TRAIL_SKINS } from '../utils/constants';
+import { useBallSkin } from '../utils/BallSkinContext';
+import { getLevelProgress, clearProgress, getSettings, saveSettings, unlockAllLevels, getBonusStars, saveBonusStars, getBounceCount, getDeathCount, getBonusAdCount } from '../utils/storage';
 import { getNextLevelOrRedirect, getTotalStars } from '../utils/gameLogic';
 import levels from '../levels'; // This is likely world1Levels
 import world2Levels from '../levels/world2';
@@ -36,6 +38,12 @@ const MenuScreen = ({ navigation }) => {
     const [settings, setSettings] = useState({ sound: true, haptics: true, music: true });
     const [bonusAdModal, setBonusAdModal] = useState(false);
     const [rewardModal, setRewardModal] = useState(false);
+    const [skinModalVisible, setSkinModalVisible] = useState(false);
+    const { skinId, color: ballColor, setBallSkin, trailSkinId, setTrailSkin } = useBallSkin();
+    const [activeTab, setActiveTab] = useState('ball'); // 'ball' or 'trail'
+    const [totalBounces, setTotalBounces] = useState(0);
+    const [totalDeaths, setTotalDeaths] = useState(0);
+    const [totalAds, setTotalAds] = useState(0);
 
     // Use useFocusEffect to handle focus events (runs on mount AND on every focus)
     // This replaces the double-call pattern of useEffect + navigation.addListener
@@ -43,12 +51,16 @@ const MenuScreen = ({ navigation }) => {
         React.useCallback(() => {
             getLevelProgress().then(setProgress);
             getBonusStars().then(setBonusStars);
+            getBounceCount().then(setTotalBounces);
+            getDeathCount().then(setTotalDeaths);
+            getBonusAdCount().then(setTotalAds);
             getSettings().then(s => {
                 setSettings(s);
                 setSoundEnabled(s.sound);
                 setMusicEnabled(s.music);
                 if (s.music) playMusic('menu');
             });
+            initGameCenter(); // Initialize Game Center quietly
         }, [])
     );
 
@@ -196,6 +208,11 @@ const MenuScreen = ({ navigation }) => {
                         await clearProgress();
                         setProgress({});
                         setBonusStars(0);
+                        setTotalBounces(0); // Reset local stats
+                        setTotalDeaths(0);
+                        setTotalAds(0);
+                        setBallSkin('red'); // Reset Skins in Context
+                        setTrailSkin('red');
                         setSettingsVisible(false);
                         Alert.alert("Reset Complete", "All progress and bonus stars have been cleared.");
                     }
@@ -241,6 +258,11 @@ const MenuScreen = ({ navigation }) => {
             const newBonus = bonusStars + 1;
             setBonusStars(newBonus);
             await saveBonusStars(newBonus);
+
+            // Track Ad Watch
+            incrementAdCount(1);
+            setTotalAds(prev => prev + 1);
+
             setRewardModal(true);
         }
     };
@@ -278,15 +300,22 @@ const MenuScreen = ({ navigation }) => {
                     }
                 ]}
             >
-                {/* Animated Ball */}
-                <Animated.View
-                    style={[
-                        styles.demoBall,
-                        { transform: [{ translateY: ballBounceAnim }] }
-                    ]}
-                >
-                    <View style={styles.ballHighlight} />
-                </Animated.View>
+                {/* Animated Ball - Tappable to change skin */}
+                <TouchableOpacity onPress={() => { playButtonClick(); setSkinModalVisible(true); }}>
+                    <Animated.View
+                        style={[
+                            styles.demoBall,
+                            {
+                                transform: [{ translateY: ballBounceAnim }],
+                                backgroundColor: ballColor,
+                                shadowColor: ballColor,
+                            }
+                        ]}
+                    >
+                        <View style={styles.ballHighlight} />
+                    </Animated.View>
+                </TouchableOpacity>
+                <Text style={styles.skinHint}>Tap the ball to switch colors</Text>
 
                 {/* Title */}
                 <Text style={styles.title}>Bounce</Text>
@@ -401,6 +430,102 @@ const MenuScreen = ({ navigation }) => {
                 ]}
                 onClose={() => setRewardModal(false)}
             />
+
+            {/* Ball Skin Selector Modal */}
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={skinModalVisible}
+                onRequestClose={() => setSkinModalVisible(false)}
+            >
+                <View style={styles.modalCentered}>
+                    <View style={styles.skinModalView}>
+                        <Text style={styles.modalTitle}>Customization</Text>
+
+                        <View style={styles.tabContainer}>
+                            <TouchableOpacity style={[styles.tabButton, activeTab === 'ball' && styles.tabButtonActive]} onPress={() => { playButtonClick(); setActiveTab('ball'); }}>
+                                <Text style={[styles.tabText, activeTab === 'ball' && styles.tabTextActive]}>Ball</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.tabButton, activeTab === 'trail' && styles.tabButtonActive]} onPress={() => { playButtonClick(); setActiveTab('trail'); }}>
+                                <Text style={[styles.tabText, activeTab === 'trail' && styles.tabTextActive]}>Trail</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={styles.skinModalSubtitle}>Select your {activeTab} color</Text>
+
+                        <View style={styles.skinGrid}>
+                            {Object.values(activeTab === 'ball' ? BALL_SKINS : TRAIL_SKINS).map((skin) => {
+                                // Check if skin is unlocked
+                                let isUnlocked = true;
+
+                                if (activeTab === 'ball') {
+                                    const lastLevelW1 = levels[levels.length - 1];
+                                    const lastLevelW2 = world2Levels[world2Levels.length - 1];
+                                    const isWorld1Complete = !!progress[lastLevelW1?.id]?.completed;
+                                    const isWorld2Complete = !!progress[lastLevelW2?.id]?.completed;
+
+                                    if (skin.id === 'cyan') isUnlocked = isWorld1Complete;
+                                    if (skin.id === 'orange') isUnlocked = isWorld2Complete;
+                                    if (skin.id === 'yellow') isUnlocked = totalBounces >= 100;
+                                    if (skin.id === 'violet') isUnlocked = totalBounces >= 1000;
+                                    if (skin.id === 'green') isUnlocked = totalAds >= 1;
+                                } else {
+                                    // Trail Skins
+                                    if (skin.id === 'orange') isUnlocked = totalDeaths >= 20;
+                                    if (skin.id === 'green') isUnlocked = totalDeaths >= 200;
+                                    if (skin.id === 'white') isUnlocked = totalBounces >= 2000;
+                                    if (skin.id === 'violet') isUnlocked = totalDeaths >= 500;
+                                    if (skin.id === 'cyan') isUnlocked = totalAds >= 5;
+                                }
+
+                                const isSelected = (activeTab === 'ball' ? skinId : trailSkinId) === skin.id;
+
+                                return (
+                                    <TouchableOpacity
+                                        key={skin.id}
+                                        style={[
+                                            styles.skinOption,
+                                            isSelected && styles.skinOptionSelected,
+                                            !isUnlocked && styles.skinOptionLocked,
+                                        ]}
+                                        onPress={() => {
+                                            playButtonClick();
+                                            if (isUnlocked) {
+                                                if (activeTab === 'ball') setBallSkin(skin.id);
+                                                else setTrailSkin(skin.id);
+                                            } else {
+                                                Alert.alert("Locked", skin.unlockText);
+                                            }
+                                        }}
+                                    >
+                                        <View style={[styles.skinBall, { backgroundColor: skin.color }]}>
+                                            {!isUnlocked && (
+                                                <View style={styles.lockOverlay}>
+                                                    <Text style={styles.lockIcon}>🔒</Text>
+                                                </View>
+                                            )}
+                                        </View>
+                                        <Text style={[
+                                            styles.skinName,
+                                            !isUnlocked && styles.skinNameLocked
+                                        ]}>
+                                            {skin.name}
+                                        </Text>
+                                        {isSelected && <Text style={styles.selectedBadge}>✓</Text>}
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+
+                        <TouchableOpacity
+                            style={styles.closeBtn}
+                            onPress={() => { playButtonClick(); setSkinModalVisible(false); }}
+                        >
+                            <Text style={styles.closeBtnTxt}>Done</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -659,9 +784,9 @@ const styles = StyleSheet.create({
         top: s(50),
         right: s(20),
         backgroundColor: 'rgba(0,0,0,0.4)',
-        paddingVertical: s(6),
-        paddingHorizontal: s(12),
-        borderRadius: s(15),
+        paddingVertical: s(8),
+        paddingHorizontal: s(14),
+        borderRadius: s(20),
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1,
@@ -669,23 +794,23 @@ const styles = StyleSheet.create({
         zIndex: 10,
     },
     starIcon: {
-        fontSize: s(18),
+        fontSize: s(24),
         color: '#fbbf24', // Gold
         marginRight: s(5),
     },
     starText: {
-        fontSize: s(16),
+        fontSize: s(20),
         fontWeight: 'bold',
         color: '#fff',
     },
     bonusStarCounter: {
         position: 'absolute',
-        top: s(85),
+        top: s(105),
         right: s(20),
         backgroundColor: 'rgba(0,0,0,0.4)',
-        paddingVertical: s(6),
-        paddingHorizontal: s(12),
-        borderRadius: s(15),
+        paddingVertical: s(8),
+        paddingHorizontal: s(14),
+        borderRadius: s(20),
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1,
@@ -693,10 +818,122 @@ const styles = StyleSheet.create({
         zIndex: 10,
     },
     bonusStarIcon: {
-        fontSize: s(18),
+        fontSize: s(24),
         color: '#a855f7', // Purple
         marginRight: s(5),
-    }
+    },
+
+    // Ball Skin Selector Styles
+    skinHint: {
+        fontSize: s(12),
+        color: COLORS.ui.textDim,
+        marginTop: s(8),
+        marginBottom: s(10),
+    },
+    skinModalView: {
+        width: '85%',
+        backgroundColor: '#1e1e2e',
+        borderRadius: s(20),
+        padding: s(25),
+        alignItems: 'center',
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)'
+    },
+    skinModalSubtitle: {
+        fontSize: s(14),
+        color: COLORS.ui.textDim,
+        marginBottom: s(20),
+    },
+    skinGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        width: '100%',
+        marginBottom: s(20),
+    },
+    skinOption: {
+        width: '30%',
+        alignItems: 'center',
+        padding: s(10),
+        marginBottom: s(15),
+        borderRadius: s(12),
+        borderWidth: 2,
+        borderColor: 'transparent',
+    },
+    skinOptionSelected: {
+        borderColor: COLORS.ui.primary,
+        backgroundColor: 'rgba(124, 58, 237, 0.2)',
+    },
+    skinOptionLocked: {
+        opacity: 0.6,
+    },
+    skinBall: {
+        width: s(50),
+        height: s(50),
+        borderRadius: s(25),
+        marginBottom: s(8),
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.6,
+        shadowRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    lockOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        borderRadius: s(25),
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    lockIcon: {
+        fontSize: s(20),
+    },
+    skinName: {
+        fontSize: s(12),
+        color: '#fff',
+        textAlign: 'center',
+    },
+    skinNameLocked: {
+        color: COLORS.ui.textDim,
+    },
+    selectedBadge: {
+        fontSize: s(16),
+        color: COLORS.ui.primary,
+        marginTop: s(4),
+    },
+
+    tabContainer: {
+        flexDirection: 'row',
+        marginBottom: s(20),
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.1)',
+        width: '100%',
+    },
+    tabButton: {
+        flex: 1,
+        paddingVertical: s(10),
+        alignItems: 'center',
+    },
+    tabButtonActive: {
+        borderBottomWidth: 2,
+        borderBottomColor: COLORS.ui.primary,
+    },
+    tabText: {
+        color: COLORS.ui.textDim,
+        fontSize: s(16),
+        fontWeight: 'bold',
+    },
+    tabTextActive: {
+        color: COLORS.ui.text,
+    },
 });
 
 export default MenuScreen;

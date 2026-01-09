@@ -24,6 +24,24 @@ export const COLORS = {
   }
 };
 
+export const BALL_SKINS = {
+  red: { id: 'red', color: '#ff6b6b', name: 'Red', unlockText: null },
+  cyan: { id: 'cyan', color: '#4ecdc4', name: 'Cyan', unlockText: 'Complete World 1 to unlock' },
+  orange: { id: 'orange', color: '#f97316', name: 'Orange', unlockText: 'Complete World 2 to unlock' },
+  yellow: { id: 'yellow', color: '#facc15', name: 'Yellow', unlockText: '100 Bounces to unlock' },
+  violet: { id: 'violet', color: '#8b5cf6', name: 'Violet', unlockText: '1000 Bounces to unlock' },
+  green: { id: 'green', color: '#22c55e', name: 'Green', unlockText: 'Watch 1 Bonus Star Ad' },
+};
+
+export const TRAIL_SKINS = {
+  red: { id: 'red', color: '#ff6b6b', name: 'Red', unlockText: null },
+  cyan: { id: 'cyan', color: '#4ecdc4', name: 'Cyan', unlockText: 'Watch 5 Bonus Star Ads' },
+  orange: { id: 'orange', color: '#f97316', name: 'Orange', unlockText: '20 Deaths to unlock' },
+  green: { id: 'green', color: '#22c55e', name: 'Green', unlockText: '200 Deaths to unlock' },
+  white: { id: 'white', color: '#ffffff', name: 'White', unlockText: '2000 Bounces to unlock' },
+  violet: { id: 'violet', color: '#8b5cf6', name: 'Violet', unlockText: '500 Deaths to unlock' },
+};
+
 // Distinct physics properties
 // ball.restitution = 0.5 (Base bounce). 
 // Restitution = max(ball, platform)
