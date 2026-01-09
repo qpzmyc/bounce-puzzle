@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Bounce Puzzle - A physics-based puzzle game where you place platforms to guide a bouncing ball to the goal. Available on iOS.">
+    <meta name="keywords" content="puzzle game, physics game, mobile game, iOS game, bounce, ball game">
+    <meta name="author" content="Yuecheng Wu">
+    <title>Bounce Puzzle - Physics-Based Puzzle Game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/png" href="/assets/favicon.png">
+</head>
+
+<body>
+    <!-- Animated Background -->
+    <div class="background-animation">
+        <div class="bg-orb bg-orb-1"></div>
+        <div class="bg-orb bg-orb-2"></div>
+        <div class="bg-orb bg-orb-3"></div>
+
+
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-logo">
+                <div class="logo-ball"></div>
+                <span>Bounce Puzzle</span>
+            </a>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#gameplay">Gameplay</a>
+                <a href="#download" class="nav-cta">Download</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+
+            <h1 class="hero-title">
+                <span class="title-bounce">Bounce</span>
+                <span class="title-puzzle">Puzzle</span>
+            </h1>
+            <p class="hero-subtitle">
+                Master the art of physics. Place platforms, angle your shots, and guide the ball to victory through 40+
+                challenging levels.
+            </p>
+            <div class="hero-cta">
+                <a href="https://apps.apple.com/us/app/bounce-puzzle-platform-jump/id6757413117" target="_blank"
+                    rel="noopener noreferrer" class="btn btn-primary">
+                    <svg class="apple-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+                    </svg>
+                    Download for iOS
+                </a>
+                <a href="#gameplay" class="btn btn-secondary">
+                    Watch Gameplay
+                </a>
+            </div>
+            <div class="hero-stats">
+                <div class="stat">
+                    <span class="stat-number">40+</span>
+                    <span class="stat-label">Levels</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-number">2</span>
+                    <span class="stat-label">Worlds</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-number">★★★</span>
+                    <span class="stat-label">3-Star System</span>
+                </div>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="phone-mockup">
+                <div class="phone-screen">
+                    <div class="game-preview">
+                        <div class="preview-ball"></div>
+                        <div class="preview-platform platform-1"></div>
+                        <div class="preview-platform platform-2"></div>
+                        <div class="preview-goal"></div>
+                        <div class="preview-trail"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">Game Features</span>
+                <h2 class="section-title">Strategize. Place. Bounce.</h2>
+                <p class="section-subtitle">
+                    Every level is a new puzzle. Choose your platforms wisely and master the physics.
+                </p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon feature-icon-normal">
+                        <div class="platform-icon"></div>
+                    </div>
+                    <h3>Normal Platforms</h3>
+                    <p>Classic bouncing platforms. Angle them perfectly to redirect the ball's trajectory.</p>
+                </div>
+                <div class="feature-card featured">
+                    <div class="feature-icon feature-icon-super">
+                        <div class="platform-icon super"></div>
+                    </div>
+                    <h3>Super Platforms</h3>
+                    <p>Launch the ball with extra power! These violet platforms give a massive boost.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon feature-icon-sticky">
+                        <div class="platform-icon sticky"></div>
+                    </div>
+                    <h3>Sticky Platforms</h3>
+                    <p>Stop the ball in its tracks. Perfect for precise positioning on tricky levels.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon feature-icon-rotation">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path
+                                d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" />
+                        </svg>
+                    </div>
+                    <h3>360° Rotation</h3>
+                    <p>Rotate platforms freely in any direction. Master the angles to find the perfect path.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon feature-icon-hazards">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2L1 21h22L12 2zm0 4l7.5 13h-15L12 6z" />
+                        </svg>
+                    </div>
+                    <h3>Hazards & Obstacles</h3>
+                    <p>Avoid deadly spikes and use fans to your advantage. Every element matters.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon feature-icon-stars">
+                        <span>★★★</span>
+                    </div>
+                    <h3>3-Star Challenges</h3>
+                    <p>Complete levels with fewer platforms for more stars. Can you get them all?</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gameplay Section -->
+    <section id="gameplay" class="gameplay">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">How to Play</span>
+                <h2 class="section-title">Simple to Learn, Hard to Master</h2>
+            </div>
+            <div class="gameplay-steps">
+                <div class="gameplay-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Place Platforms</h3>
+                        <p>Drag platforms from your bank onto the game board. Position them strategically to create the
+                            optimal for the ball. Less platforms used rewards more stars.</p>
+                    </div>
+                    <div class="step-visual">
+                        <div class="step-demo demo-place">
+                            <div class="demo-platform-bank">
+                                <div class="bank-platform-faded"></div>
+                            </div>
+                            <div class="demo-board"></div>
+                            <div class="dragging-platform"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="gameplay-step reverse">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Angle Your Shots</h3>
+                        <p>Rotate platforms to change the ball's trajectory. Use the ghost trail from previous attempts
+                            to perfect your path.</p>
+                    </div>
+                    <div class="step-visual">
+                        <div class="step-demo demo-angle">
+                            <div class="angle-platform"></div>
+                            <div class="angle-arc"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="gameplay-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Drop & Watch</h3>
+                        <p>Hit the drop button and watch the physics unfold. The ball will bounce according to real
+                            physics simulation.</p>
+                    </div>
+                    <div class="step-visual">
+                        <div class="step-demo demo-drop">
+                            <div class="drop-ball"></div>
+                            <div class="drop-trail"></div>
+                            <div class="drop-goal"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Worlds Section -->
+    <section class="worlds">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">Explore</span>
+                <h2 class="section-title">Three Unique Worlds</h2>
+                <p class="section-subtitle">
+                    Each world introduces new challenges and visual themes.
+                </p>
+            </div>
+            <div class="worlds-grid">
+                <div class="world-card world-1">
+                    <div class="world-preview">
+                        <div class="world-elements">
+                            <div class="we-ball"></div>
+                            <div class="we-platform"></div>
+                            <div class="we-goal"></div>
+                        </div>
+                    </div>
+                    <div class="world-info">
+                        <span class="world-badge">World 1</span>
+                        <h3>The Beginning</h3>
+                        <p>23 levels to learn the basics. Master the fundamentals of platform placement and physics.</p>
+                        <div class="world-colors">
+                            <span class="color-dot" style="background: #ff6b6b;"></span>
+                            <span class="color-dot" style="background: #4ecdc4;"></span>
+                            <span class="color-dot" style="background: #45b7d1;"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="world-card world-2">
+                    <div class="world-preview">
+                        <div class="world-elements">
+                            <div class="we-ball"></div>
+                            <div class="we-platform" style="background: #f97316;"></div>
+                            <div class="we-goal"></div>
+                        </div>
+                    </div>
+                    <div class="world-info">
+                        <span class="world-badge">World 2</span>
+                        <h3>Rising Heat</h3>
+                        <p>More levels with orange themes and harder puzzles. Precision becomes essential.</p>
+                        <div class="world-colors">
+                            <span class="color-dot" style="background: #f97316;"></span>
+                            <span class="color-dot" style="background: #ef4444;"></span>
+                            <span class="color-dot" style="background: #eab308;"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="world-card world-3">
+                    <div class="world-preview">
+                        <div class="world-elements">
+                            <div class="we-ball"></div>
+                            <div class="we-platform" style="background: #3b82f6;"></div>
+                            <div class="we-goal"></div>
+                        </div>
+                    </div>
+                    <div class="world-info">
+                        <span class="world-badge">World 3</span>
+                        <h3>Ice Spikes</h3>
+                        <p>Coming soon</p>
+                        <div class="world-colors">
+                            <span class="color-dot" style="background: #3b82f6;"></span>
+                            <span class="color-dot" style="background: #a855f7;"></span>
+                            <span class="color-dot" style="background: #60a5fa;"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section id="download" class="download">
+        <div class="container">
+            <div class="download-card">
+                <div class="download-content">
+                    <div class="app-icon-large">
+                        <img src="assets/icon.png" alt="Bounce Puzzle" class="app-icon-img">
+                    </div>
+                    <h2>Ready to Bounce?</h2>
+                    <p>Download Bounce Puzzle for free and start your physics puzzle adventure today.</p>
+                    <a href="https://apps.apple.com/us/app/bounce-puzzle-platform-jump/id6757413117" target="_blank"
+                        rel="noopener noreferrer" class="btn btn-download">
+                        <svg class="apple-icon" viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+                        </svg>
+                        <div class="download-text">
+                            <span class="download-small">Download on the</span>
+                            <span class="download-large">App Store</span>
+                        </div>
+                    </a>
+                </div>
+                <div class="download-decoration">
+                    <div class="deco-ball deco-ball-1"></div>
+                    <div class="deco-ball deco-ball-2"></div>
+                    <div class="deco-ball deco-ball-3"></div>
+                    <div class="deco-platform deco-platform-1"></div>
+                    <div class="deco-platform deco-platform-2"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <div class="logo-ball"></div>
+                        <span>Bounce Puzzle</span>
+                    </div>
+                    <p>A physics-based puzzle game by Yuecheng Wu</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4>Game</h4>
+                        <a href="#features">Features</a>
+                        <a href="#gameplay">Gameplay</a>
+                        <a href="#download">Download</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Legal</h4>
+                        <a href="privacy.html">Privacy Policy</a>
+                        <a href="mailto:yuechengwu2010@gmail.com">Contact</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Yuecheng Wu. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
