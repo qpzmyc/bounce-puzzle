@@ -8,11 +8,12 @@ import {
     Dimensions,
     Modal,
     Switch,
-    Alert // Added Alert
+    Alert, // Added Alert
+    NativeModules
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from '@react-navigation/native';
-import { initGameCenter, incrementAdCount } from '../utils/achievements';
+import { initGameCenter, incrementAdCount, openAchievements, openLeaderboard, resetGameCenterAchievements } from '../utils/achievements';
 import { COLORS, BALL_SKINS, TRAIL_SKINS } from '../utils/constants';
 import { useBallSkin } from '../utils/BallSkinContext';
 import { getLevelProgress, clearProgress, getSettings, saveSettings, unlockAllLevels, getBonusStars, saveBonusStars, getBounceCount, getDeathCount, getBonusAdCount } from '../utils/storage';
@@ -47,6 +48,8 @@ const MenuScreen = ({ navigation }) => {
 
     // Use useFocusEffect to handle focus events (runs on mount AND on every focus)
     // This replaces the double-call pattern of useEffect + navigation.addListener
+    // Use useFocusEffect to handle focus events (runs on mount AND on every focus)
+    // This replaces the double-call pattern of useEffect + navigation.addListener
     useFocusEffect(
         React.useCallback(() => {
             getLevelProgress().then(setProgress);
@@ -60,9 +63,13 @@ const MenuScreen = ({ navigation }) => {
                 setMusicEnabled(s.music);
                 if (s.music) playMusic('menu');
             });
-            initGameCenter(); // Initialize Game Center quietly
         }, [])
     );
+
+    // Initialize Game Center ONLY ONCE when app opens
+    useEffect(() => {
+        initGameCenter();
+    }, []);
 
     const earnedStars = getTotalStars(progress, 0); // Stars from completed levels only
     const totalStars = getTotalStars(progress, bonusStars); // Used for unlock checks
@@ -276,6 +283,26 @@ const MenuScreen = ({ navigation }) => {
                 <View style={[styles.bgCircle, styles.bgCircle3]} />
             </View>
 
+            {/* Achievements Trophy (Top Left) */}
+            {/* Game Center Buttons (Top Left) */}
+            {NativeModules.RNGameCenter && (
+                <View style={styles.gameCenterButtons}>
+                    <TouchableOpacity
+                        style={styles.gameCenterBtn}
+                        onPress={() => { playButtonClick(); openAchievements(); }}
+                    >
+                        <Text style={styles.gcIcon}>🏆</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.gameCenterBtn, { marginTop: s(10) }]}
+                        onPress={() => { playButtonClick(); openLeaderboard(); }}
+                    >
+                        <Text style={styles.gcIcon}>📊</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
             {/* Earned Stars Counter (Gold - Display Only) */}
             <View style={styles.starCounter}>
                 <Text style={styles.starIcon}>★</Text>
@@ -379,6 +406,25 @@ const MenuScreen = ({ navigation }) => {
                         <TouchableOpacity style={styles.modalResetBtn} onPress={handleReset}>
                             <Text style={styles.modalResetTxt}>Reset All Progress</Text>
                         </TouchableOpacity>
+
+                        {__DEV__ && NativeModules.RNGameCenter && (
+                            <TouchableOpacity
+                                style={[styles.modalResetBtn, { backgroundColor: '#ef4444', marginTop: s(10) }]}
+                                onPress={() => {
+                                    playButtonClick();
+                                    Alert.alert(
+                                        "Reset Achievements (Dev)",
+                                        "This will permanently clear all Game Center achievements for this account. This cannot be undone. Proceed?",
+                                        [
+                                            { text: "Cancel", style: "cancel" },
+                                            { text: "Reset", style: "destructive", onPress: resetGameCenterAchievements }
+                                        ]
+                                    );
+                                }}
+                            >
+                                <Text style={styles.modalResetTxt}>Reset Game Center Achievements (Dev)</Text>
+                            </TouchableOpacity>
+                        )}
 
                         {__DEV__ && (
                             <TouchableOpacity style={[styles.settingRow, { borderBottomWidth: 0, marginTop: s(20) }]} onPress={handleUnlockAll}>
@@ -933,6 +979,22 @@ const styles = StyleSheet.create({
     },
     tabTextActive: {
         color: COLORS.ui.text,
+    },
+    gameCenterButtons: {
+        position: 'absolute',
+        top: s(50),
+        left: s(20),
+        zIndex: 10,
+    },
+    gameCenterBtn: {
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        padding: s(8),
+        borderRadius: s(20),
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    gcIcon: {
+        fontSize: s(24),
     },
 });
 
