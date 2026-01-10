@@ -19,7 +19,7 @@ import levels from '../levels';
 import world2Levels from '../levels/world2';
 import world3Levels from '../levels/world3';
 import { getLevelProgress, saveLevelProgress, getSettings, getBonusStars, saveBonusStars, hasEnteredWorld, markWorldEntered } from '../utils/storage';
-import { incrementBounceCount, incrementDeathCount, checkCompletion } from '../utils/achievements';
+import { incrementBounceCount, incrementDeathCount, checkCompletion, incrementAdCount } from '../utils/achievements';
 import { getTotalStars, getNextLevelOrRedirect } from '../utils/gameLogic';
 import * as Haptics from 'expo-haptics';
 import { loadSounds, playSound, unloadSounds, setSoundEnabled, playMusic, stopMusic, pauseMusic, resumeMusic, playButtonClick } from '../utils/audio';
@@ -1138,10 +1138,15 @@ const GameScreen = ({ route, navigation }) => {
                                 pauseMusic();
                                 const earned = await showRewardedAd();
                                 resumeMusic();
+                                console.log('[GameScreen] Locked Level Ad watched!');
                                 if (earned) {
+                                    console.log('[GameScreen] Ad earned! Granting star and achievements.');
                                     const newBonus = bonusStars + 1;
                                     setBonusStars(newBonus);
                                     await saveBonusStars(newBonus);
+                                    incrementAdCount(1);
+                                } else {
+                                    console.log('[GameScreen] Ad NOT earned (cancelled or failed).');
                                 }
                             }, 1000);
                         }

@@ -18,6 +18,7 @@ import { Alert } from 'react-native';
 import { playMusic, pauseMusic, resumeMusic, playButtonClick } from '../utils/audio';
 import { getBonusStars, saveBonusStars } from '../utils/storage';
 import { showRewardedAd } from '../utils/ads';
+import { incrementAdCount } from '../utils/achievements';
 import StyledModal from '../components/StyledModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -86,6 +87,8 @@ const LevelSelectScreen = ({ route, navigation }) => {
             const newBonus = bonusStars + 1;
             setBonusStars(newBonus);
             await saveBonusStars(newBonus);
+            incrementAdCount(1);
+            console.log('[LevelSelect] Ad watched, count incremented.');
 
             const newTotal = current + 1;
             if (newTotal >= required) {

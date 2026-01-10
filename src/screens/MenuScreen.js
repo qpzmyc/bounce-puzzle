@@ -449,7 +449,7 @@ const MenuScreen = ({ navigation }) => {
                 icon="✨"
                 accentColor="#a855f7"
                 buttons={[
-                    { text: "Later", style: 'cancel', onPress: () => { playButtonClick(); setBonusAdModal(false); } },
+                    { text: "Later", style: 'cancel', onPress: () => { setBonusAdModal(false); } },
                     {
                         text: "Watch Ad", onPress: () => {
                             setBonusAdModal(false);
